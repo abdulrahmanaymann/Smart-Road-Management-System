@@ -1,4 +1,6 @@
 from datetime import datetime
+import openpyxl
+import pandas as pd
 
 from config import *
 
@@ -122,3 +124,18 @@ def process_travels_data(df_travels, governorates_dict, r, producer):
             print(f"Invalid data for Travel ID: {travel_id}")
 
     print("# Violations Data saved to Redis.")
+
+
+def process_new_travel_data(df_travels, id, start_gate, end_gate, distance):
+    # Create a new DataFrame with the new travel record
+    new_record = pd.DataFrame(
+        {
+            "ID": [id],
+            "Start Gate": [start_gate],
+            "End Gate": [end_gate],
+            "Distance (KM)": [distance],
+        }
+    )
+    df_travels = df_travels.append(new_record, ignore_index=True)
+
+    return df_travels
