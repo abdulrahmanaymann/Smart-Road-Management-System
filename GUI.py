@@ -1,8 +1,29 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
+from tkinter import simpledialog
 
+from data_handler import *
 from config import EXCEL_FILE
 from excel_reader import read_excel_sheets
+
+
+def add_travel_record(df_travels):
+    id = simpledialog.askstring("New Travel Record", "Enter ID (e.g., 789_Car):")
+    start_gate = simpledialog.askstring("New Travel Record", "Enter Start Gate:")
+    end_gate = simpledialog.askstring("New Travel Record", "Enter End Gate:")
+    distance = simpledialog.askfloat("New Travel Record", "Enter Distance (KM):")
+
+    if id and start_gate and end_gate and distance is not None:
+        # Add the new travel record to the DataFrame
+        df_travels = process_new_travel_data(
+            df_travels, id, start_gate, end_gate, distance
+        )
+        messagebox.showinfo("Success", "Travel record added successfully.")
+    else:
+        messagebox.showerror("Error", "Please fill in all fields.")
+
+    return df_travels
 
 
 def display_data():
