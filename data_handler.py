@@ -136,6 +136,10 @@ def process_new_travel_data(df_travels, id, start_gate, end_gate, distance):
             "Distance (KM)": [distance],
         }
     )
-    df_travels = df_travels.append(new_record, ignore_index=True)
+    df_travels = pd.concat([df_travels, new_record], ignore_index=True)
+    with pd.ExcelWriter(
+        EXCEL_FILE, engine="openpyxl", mode="a", if_sheet_exists="replace"
+    ) as writer:
+        df_travels.to_excel(writer, sheet_name=SHEET3, index=False)
 
     return df_travels
