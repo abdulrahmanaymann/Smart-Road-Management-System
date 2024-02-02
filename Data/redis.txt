@@ -1,0 +1,49 @@
+SET key value: Set a key to hold a string value.
+
+GET key: Get the value of a key.
+
+DEL key [key...]: Delete one or more keys.
+
+HSET key field value: Set a field in a hash.
+
+HGET key field: Get the value of a field in a hash.
+
+HMSET key field value [field value...]: Set multiple fields in a hash.
+
+HMGET key field [field...]: Get the values of one or more fields from a hash.
+
+LPUSH key value [value...]: Insert one or more values at the head of a list.
+
+RPUSH key value [value...]: Insert one or more values at the tail of a list.
+
+LPOP key: Remove and return the first element of a list.
+
+RPOP key: Remove and return the last element of a list.
+
+SADD key member [member...]: Add one or more members to a set.
+
+SMEMBERS key: Return all the members of a set.
+
+ZADD key score member [score member...]: Add one or more members to a sorted set with scores.
+
+ZRANGE key start stop [WITHSCORES]: Return a range of members in a sorted set.
+
+INCR key: Increment the integer value of a key by one.
+
+DECR key: Decrement the integer value of a key by one.
+
+EXPIRE key seconds: Set a key's time to live in seconds.
+
+TTL key: Get the remaining time to live of a key.
+
+PUBLISH channel message: Publish a message to a channel.
+
+SUBSCRIBE channel [channel...]: Subscribe to one or more channels.
+
+UNSUBSCRIBE [channel...]: Unsubscribe from one or more channels.
+
+SELECT db_index: Change the selected database for the current connection.
+
+FLUSHDB: Remove all keys from the current database.
+
+INFO [section]: Get information about the Redis server.
