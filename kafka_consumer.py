@@ -1,36 +1,36 @@
-from confluent_kafka import Consumer, KafkaError
-from config import *
-from confluent_kafka import Consumer, KafkaException
+from confluent_kafka import Consumer, KafkaError, KafkaException
+from config import KAFKA_BROKER, KAFKA_TOPIC
+
 
 def kafka_consumer():
-    conf = {
-        'bootstrap.servers':KAFKA_BROKER,
-        'group.id': 'your_group_id',
-        # other consumer configuration properties...
-    }
-
-    # Print the group id
-    print("Group ID:", conf['group.id'])
-
-    consumer = Consumer(conf)
-
-    topics = [KAFKA_TOPIC]
-    consumer.subscribe(topics)
-
     try:
+        print("Kafka consumer started.")
+
+        conf = {
+            "bootstrap.servers": KAFKA_BROKER,
+            "group.id": "my_consumer_group",
+            "auto.offset.reset": "earliest",
+        }
+        consumer = Consumer(conf)
+        consumer.subscribe([KAFKA_TOPIC])
+
         while True:
             msg = consumer.poll(1.0)
             if msg is None:
                 continue
             if msg.error():
-                if msg.error().code() == KafkaException._PARTITION_EOF:
-                    # End of partition event
+                if msg.error().code() == KafkaError._PARTITION_EOF:
                     continue
                 else:
                     print(msg.error())
                     break
-            # process the message...
-    except KeyboardInterrupt:
-        pass
-    finally:
+
+            print("Received message: {}".format(msg.value().decode("utf-8")))
+
         consumer.close()
+
+    except KafkaException as e:
+        print(f"Kafka Exception: {e}")
+
+    except Exception as ex:
+        print(f"Exception: {ex}")
