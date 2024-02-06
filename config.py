@@ -7,7 +7,7 @@ REDIS_PORT = 6379
 REDIS_DB = 0
 
 # Excel Sheets Constants
-EXCEL_FILE = "Data/data.xlsx"
+EXCEL_FILE = "Data/New data.xlsx"
 SHEET1 = "governorates"
 SHEET2 = "vehicles"
 SHEET3 = "travels"
@@ -31,5 +31,3 @@ CONN = DB_Connection(
     MYSQL_PASSWORD,
     MYSQL_DATABASE,
 )
-
-

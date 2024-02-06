@@ -144,7 +144,9 @@ def process_new_travel_data(id, start_gate, end_gate, distance, producer):
         }
         send_to_kafka(producer, KAFKA_TOPIC, kafka_message)
 
-        conn, cursor = DB_Connection(MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE)
+        conn, cursor = DB_Connection(
+            MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
+        )
         if conn and cursor:
             try:
                 query = "INSERT INTO travels (ID, Start_Gate, End_Gate, Distance) VALUES (%s ,%s ,%s ,%s)"
@@ -182,3 +184,27 @@ def process_new_travel_data(id, start_gate, end_gate, distance, producer):
         print(f"Error occurred: {e}")
         return None
 
+
+def Calaulate_Lowest_Distance(start_gate, dict):
+    min_key = None
+    min_value = float("inf")
+
+    start_index = list(dict.keys()).index(start_gate)
+
+    valid_gates = list(dict.keys())[start_index + 1 :]
+
+    for entry_key, entry_values in dict.items():
+        if entry_key in valid_gates and pd.notna(entry_values[start_gate]):
+            if entry_values[start_gate] == 0:
+                continue
+            if entry_values[start_gate] < min_value:
+                min_value = entry_values[start_gate]
+                min_key = entry_key
+
+    if min_key is None:
+        raise ValueError("No valid end gate found for the entered start gate.")
+
+    end_gate_index = (start_index + 1) % len(dict)
+    end_gate = list(dict.keys())[end_gate_index]
+
+    return min_key, end_gate, min_value
