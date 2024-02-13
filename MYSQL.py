@@ -1,4 +1,6 @@
 import mysql.connector
+from Config.Logger import LOGGER
+
 
 def DB_Connection(host, port, user, password, database):
     try:
@@ -10,12 +12,12 @@ def DB_Connection(host, port, user, password, database):
         if connection.is_connected():
             cursor.execute("SELECT DATABASE() ;")
             db = cursor.fetchone()
-            print(f"Connected to database {db} successfully")
+            LOGGER.info("Connected to database %s successfully", db)
             return connection, cursor
         else:
-            print("Error: Failed to connect to the database.")
+            LOGGER.error("Failed to connect to the database.")
             return None, None
 
     except mysql.connector.Error as err:
-        print(f"Error: {err}")
+        LOGGER.error("Error: %s", err)
         return None, None

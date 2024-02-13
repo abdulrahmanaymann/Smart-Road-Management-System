@@ -1,10 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import pandas as pd
-from config import *
+from Config.config import *
 from MYSQL import *
 from confluent_kafka import Producer
 import redis
+from Config.Logger import LOGGER
 
 
 def get_redis_connection():
@@ -19,9 +20,9 @@ def send_to_kafka(producer, topic, data):
     try:
         producer.produce(topic, value=json.dumps(data))
         producer.flush()
-        print(f"Data sent successfully to Kafka topic: {topic}")
+        LOGGER.info(f"Data sent successfully to Kafka topic: {topic}")
     except Exception as e:
-        print(f"Error occurred while sending data to Kafka: {e}")
+        LOGGER.error(f"Error occurred while sending data to Kafka: {e}")
 
 
 def insert_governorates_data(redis_connection, df_governorates):
@@ -41,11 +42,11 @@ def insert_governorates_data(redis_connection, df_governorates):
             # Save the data in the hash
             redis_connection.hset(f"governorate:{code}", mapping=data)
 
-        print("# Governorates Data saved to Redis.")
+        LOGGER.info("# Governorates Data saved to Redis.")
         return governorates_dict
 
     except Exception as e:
-        print(f"Error occurred while inserting governorates data: {e}")
+        LOGGER.error(f"Error occurred while inserting governorates data: {e}")
         return None
 
 
@@ -60,10 +61,10 @@ def insert_vehicles_data(redis_connection, df_vehicles):
             # Save the data in the hash
             redis_connection.hset(f"vehicle_data:{key}", mapping=data)
 
-        print("# Vehicles Data saved to Redis.")
+        LOGGER.info("# Vehicles Data saved to Redis.")
 
     except Exception as e:
-        print(f"Error occurred while inserting vehicle data: {e}")
+        LOGGER.error(f"Error occurred while inserting vehicle data: {e}")
 
 
 def calculate_ttl(
@@ -85,11 +86,11 @@ def calculate_ttl(
         return ttl_seconds, end_gate_code
 
     except ValueError:
-        print("Error: Invalid input data for distance or legal speed.")
+        LOGGER.error("Error: Invalid input data for distance or legal speed.")
         return None, None
 
     except Exception as e:
-        print(f"Error occurred: {e}")
+        LOGGER.error(f"Error occurred: {e}")
         return None, None
 
 
@@ -98,7 +99,7 @@ def process_travels_data(id, min_value, min_key, df_governorates, redis_connecti
         governorates_dict = insert_governorates_data(redis_connection, df_governorates)
 
         if governorates_dict is None:
-            print("Error: Failed to insert governorates data into Redis.")
+            LOGGER.error("Error: Failed to insert governorates data into Redis.")
             return
 
         ttl, end_gate_code = calculate_ttl(
@@ -122,19 +123,21 @@ def process_travels_data(id, min_value, min_key, df_governorates, redis_connecti
                 "TTL (seconds)": ttl,
             }
             redis_connection.hset(last_travel_key, mapping=last_travel_data)
-            print(
+            LOGGER.info(
                 f"Travel ID: {travel_id_with_code}, Start Date: {start_date}, TTL (seconds): {ttl :.2f}"
             )
         else:
-            print(f"Invalid data for Travel ID: {id}")
+            LOGGER.error(f"Invalid data for Travel ID: {id}")
 
-        print("# Travels Data saved to Redis.")
+        LOGGER.info("# Travels Data saved to Redis.")
 
     except Exception as e:
-        print(f"Error occurred: {e}")
+        LOGGER.error(f"Error occurred: {e}")
 
 
-def process_new_travel_data(id, start_gate, end_gate, distance, producer):
+def process_new_travel_data(
+    id, start_gate, end_gate, distance, producer, redis_connection
+):
     try:
         kafka_message = {
             "ID": id,
@@ -153,7 +156,7 @@ def process_new_travel_data(id, start_gate, end_gate, distance, producer):
                 value = (id, start_gate, end_gate, distance)
                 cursor.execute(query, value)
                 conn.commit()
-                print("Data inserted into MySQL successfully.")
+                LOGGER.info("Data inserted into MySQL successfully.")
             finally:
                 cursor.close()
                 conn.close()
@@ -174,14 +177,55 @@ def process_new_travel_data(id, start_gate, end_gate, distance, producer):
             ) as writer:
                 new_records.to_excel(writer, SHEET3, index=False)
 
-            print("Excel file updated.")
-            return new_record
-        else:
-            print("Failed to establish connection to MySQL database.")
-            return None
+            LOGGER.info("Excel file updated.")
+
+            existing_travel_keys = redis_connection.keys(f"{id}-*")
+            travel_records_count = 0
+            latest_travel_key = f"{id}-{start_gate}"
+
+            for key in existing_travel_keys:
+                ttl = redis_connection.ttl(key)
+                if ttl > 0:
+                    travel_records_count += 1
+                    if ttl > redis_connection.ttl(latest_travel_key):
+                        latest_travel_key = key
+
+            if travel_records_count > 1:
+                start_date = datetime.now()
+                end_date = start_date + timedelta(
+                    seconds=redis_connection.ttl(latest_travel_key)
+                )
+                LOGGER.warning(
+                    f"Violation: Vehicle ID {id} has multiple existing travel records with TTL not expired. "
+                    f"Start Date: {start_date}, End Date: {end_date}"
+                )
+                LOGGER.info("Latest travel key: %s", latest_travel_key)
+
+                for key in existing_travel_keys:
+                    if key != latest_travel_key:
+                        redis_connection.delete(key)
+                        LOGGER.info(f"Key {key} removed from Redis.")
+
+                conn, cursor = DB_Connection(
+                    MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
+                )
+                if conn and cursor:
+                    try:
+                        query = "INSERT INTO violations (Car_ID, Start_Date, End_Date) VALUES (%s ,%s ,%s)"
+                        value = (id, start_date, end_date)
+                        cursor.execute(query, value)
+                        conn.commit()
+                        LOGGER.info(
+                            "Violation record inserted into MySQL successfully."
+                        )
+                    finally:
+                        cursor.close()
+                        conn.close()
+
+        return new_record
 
     except Exception as e:
-        print(f"Error occurred: {e}")
+        LOGGER.error(f"Error occurred: {e}")
         return None
 
 

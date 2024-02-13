@@ -1,7 +1,8 @@
 from datetime import datetime
 import PySimpleGUI as sg
-from config import *
+from Config.config import *
 from data_handler import get_redis_connection
+
 
 def search_and_insert_violations(conn):
     try:
@@ -38,7 +39,7 @@ def search_and_insert_violations(conn):
                             print(f"Key: {k}, Value: {decoded_data[k]}")
 
                         val = list(decoded_data.values())
-                        car_str = val[0]  
+                        car_str = val[0]
                         Car_ID = car_str.split("-")
                         CarID = Car_ID[0]
                         start_date = val[1]
@@ -47,8 +48,10 @@ def search_and_insert_violations(conn):
                         # Unpack the tuple into separate variables
                         db_conn, cursor = conn
 
-                        cursor.execute("INSERT INTO violations (Car_ID, Start_Date, End_Date) VALUES (%s, %s, %s)",
-                                       (CarID, start_date, end_date))
+                        cursor.execute(
+                            "INSERT INTO violations (Car_ID, Start_Date, End_Date) VALUES (%s, %s, %s)",
+                            (CarID, start_date, end_date),
+                        )
                         db_conn.commit()
 
                         print("DATA INSERTED SUCCESSFULLY :)")

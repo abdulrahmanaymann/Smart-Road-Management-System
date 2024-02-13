@@ -1,9 +1,8 @@
 import threading
 from MYSQL import *
 from data_handler import *
-from config import *
+from Config.config import *
 from excel_reader import read_excel_sheets
-import pandas as pd
 import PySimpleGUI as sg
 
 from kafka_consumer import kafka_consumer
@@ -38,6 +37,7 @@ def add_travel_record():
         [sg.Output(size=(50, 10))],
     ]
     window = sg.Window("Add Travel Record", layout, element_justification="center")
+    window.set_icon(ADD_TRAVEL_ICON)
     while True:
         event, values = window.read()
 
@@ -55,13 +55,24 @@ def add_travel_record():
 
                 process_travels_data(id, min_value, end_gate, df_governorates, r)
 
-                process_new_travel_data(id, start_gate, min_key, min_value, p)
+                process_new_travel_data(id, start_gate, min_key, min_value, p, r)
 
-                sg.popup("Travel record added successfully!", title="Success")
+                sg.popup(
+                    "Travel record added successfully!",
+                    title="Success",
+                    icon=EMBLEM_DEFAULT_ICON,
+                )
 
             except ValueError as ve:
-                sg.popup(f"Error: {ve}", title="Value Error")
+                sg.popup(
+                    f"Error: {ve}",
+                    title="Value Error",
+                    icon=DIALOG_ERROR_ICON,
+                )
             except Exception as e:
-                sg.popup(f"Error: {e}", title="Error")
+                sg.popup(
+                    f"Error: {e}",
+                    title="Error",
+                    icon=DIALOG_ERROR_ICON,
+                )
     p.flush()
-    p.close()

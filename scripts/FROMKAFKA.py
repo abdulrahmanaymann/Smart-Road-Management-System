@@ -2,12 +2,13 @@ import PySimpleGUI as sg
 from kafka import KafkaProducer
 import mysql.connector
 from GUI import *
+from Config.config import *
 
 # Define the Kafka broker address
 bootstrap_servers = "localhost:9092"
 
 # Kafka topic to send messages
-topic_name = "travel-data"
+topic_name = "travel_data"
 
 # Create a KafkaProducer instance
 producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
@@ -60,6 +61,7 @@ def FROM_KAFKA():
             ],
         ]
         window = sg.Window("Send to Kafka topic", layout=layout)
+        window.set_icon(DOWNLOAD_ICON)
         while True:
             event, values = window.read()
 
@@ -79,7 +81,11 @@ def FROM_KAFKA():
                 # Flush the producer to ensure all messages are sent
                 producer.flush()
 
-                sg.popup("Message sent successfully!", title="Success")
+                sg.popup(
+                    "Message sent successfully!",
+                    title="Success",
+                    icon=EMBLEM_DEFAULT_ICON,
+                )
                 print(
                     f"data send successfully to topic : {topic_name} with value {val}"
                 )
@@ -96,11 +102,13 @@ def FROM_KAFKA():
                     sg.popup(
                         f"Gates that Car: {Car_ID} is registered:\n{', '.join(list(sorted(end_gate_str)))}",
                         title="Gates",
+                        icon=GATE_ICON,
                     )
                 else:
                     sg.popup(
                         f"No end gates found for Car ID {car_id}",
                         title="Gates",
+                        icon=GATE_ICON,
                     )
             if event == "Add new travel":
                 government = values["key"]
@@ -132,9 +140,17 @@ def FROM_KAFKA():
                     )
 
                     # Display success message
-                    sg.popup("Travel record added successfully!", title="Success")
+                    sg.popup(
+                        "Travel record added successfully!",
+                        title="Success",
+                        icon=EMBLEM_DEFAULT_ICON,
+                    )
                 else:
-                    sg.popup("Travel key not exists!", title="Redis")
+                    sg.popup(
+                        "Travel key not exists!",
+                        title="Redis",
+                        icon=REDIS_ICON,
+                    )
 
         producer.close()
         window.close()
