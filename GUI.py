@@ -77,7 +77,7 @@ def add_travel_record():
 
             if not start_gate:
                 sg.popup_error("Start Gate cannot be empty.")
-                continue
+                continue 
 
             try:
                 min_key, end_gate, min_value = Calaulate_Lowest_Distance(

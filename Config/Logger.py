@@ -22,4 +22,4 @@ LOGGER.setLevel(logging.INFO)
 
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
-LOGGER.addHandler(handler)
+LOGGER.addHandler(handler) 
