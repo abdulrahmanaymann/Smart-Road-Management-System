@@ -61,6 +61,8 @@ def add_travel_record():
         size=(400, 200),
     )
 
+    added_records = set()
+
     while True:
         event, values = window.read()
 
@@ -77,7 +79,13 @@ def add_travel_record():
 
             if not start_gate:
                 sg.popup_error("Start Gate cannot be empty.")
-                continue 
+                continue
+
+            if (car_id, start_gate) in added_records:
+                sg.popup_error(
+                    "This vehicle ID and start gate combination already exists."
+                )
+                continue
 
             try:
                 min_key, end_gate, min_value = Calaulate_Lowest_Distance(
@@ -87,6 +95,8 @@ def add_travel_record():
                 process_travels_data(car_id, min_value, end_gate, df_governorates, r)
 
                 process_new_travel_data(car_id, start_gate, min_key, min_value, p, r)
+
+                added_records.add((car_id, start_gate))
 
                 sg.popup_ok(
                     "Travel record added successfully!",
