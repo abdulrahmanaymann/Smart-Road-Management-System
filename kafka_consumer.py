@@ -1,10 +1,11 @@
 from confluent_kafka import Consumer, KafkaError, KafkaException
-from config import KAFKA_BROKER, KAFKA_TOPIC
+from Config.config import KAFKA_BROKER, KAFKA_TOPIC
+from Config.Logger import LOGGER
 
 
 def kafka_consumer():
     try:
-        print("Kafka consumer started.")
+        LOGGER.info("Kafka consumer started.")
 
         conf = {
             "bootstrap.servers": KAFKA_BROKER,
@@ -22,15 +23,15 @@ def kafka_consumer():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
                     continue
                 else:
-                    print(msg.error())
+                    LOGGER.error(msg.error())
                     break
 
-            print("Received message: {}".format(msg.value().decode("utf-8")))
+            LOGGER.info("Received message: %s", msg.value().decode("utf-8"))
 
         consumer.close()
 
     except KafkaException as e:
-        print(f"Kafka Exception: {e}")
+        LOGGER.error("Kafka Exception: %s", e)
 
     except Exception as ex:
-        print(f"Exception: {ex}")
+        LOGGER.error("Exception: %s", ex)

@@ -1,34 +1,28 @@
-import multiprocessing
 from GUI import *
-from GUI_logout import search_and_insert_violations
-from config import *
+from Config.config import *
 from data_handler import *
-from MYSQL import *
 from kafka_consumer import *
+from Config.Logger import LOGGER
 
 
 def main():
-    r = get_redis_connection()
-    df_governorates, df_vehicles, _, _ = read_excel_sheets(EXCEL_FILE)
-    insert_governorates_data(r, df_governorates)
+    try:
+        r = get_redis_connection()
 
-    insert_vehicles_data(r, df_vehicles)
+        df_governorates, df_vehicles, _, _ = read_excel_sheets(EXCEL_FILE)
 
-    add_travel_record()
+        insert_governorates_data(r, df_governorates)
 
-    """   # Create a process for adding travel record GUI
-        add_travel_record_process = multiprocessing.Process(target=add_travel_record)
-        add_travel_record_process.start()
+        insert_vehicles_data(r, df_vehicles)
 
-        # Create a process for search and insert violations GUI
-        search_insert_violations_process = multiprocessing.Process(target=FROM_KAFKA)
-        search_insert_violations_process.start()
+        add_travel_record()
 
-        # Wait for both processes to finish
-        add_travel_record_process.join()
-        search_insert_violations_process.join() """
+    except Exception as e:
+        LOGGER.error(f"Error: {e}")
 
-    r.close()
+    finally:
+        if r:
+            r.close()
 
 
 if __name__ == "__main__":
