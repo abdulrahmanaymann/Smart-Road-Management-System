@@ -234,21 +234,24 @@ def Calaulate_Lowest_Distance(start_gate, dict):
     min_value = float("inf")
 
     start_index = list(dict.keys()).index(start_gate)
+    total_gates = len(dict)
 
-    valid_gates = list(dict.keys())[start_index + 1 :]
+    for i in range(total_gates):
+        current_gate_index = (start_index + i) % total_gates
+        current_gate = list(dict.keys())[current_gate_index]
 
-    for entry_key, entry_values in dict.items():
-        if entry_key in valid_gates and pd.notna(entry_values[start_gate]):
-            if entry_values[start_gate] == 0:
+        if pd.notna(dict[current_gate][start_gate]):
+            distance_to_gate = dict[current_gate][start_gate]
+            if distance_to_gate == 0:
                 continue
-            if entry_values[start_gate] < min_value:
-                min_value = entry_values[start_gate]
-                min_key = entry_key
+            if distance_to_gate < min_value:
+                min_value = distance_to_gate
+                min_key = current_gate
 
     if min_key is None:
         raise ValueError("No valid end gate found for the entered start gate.")
 
-    end_gate_index = (start_index + 1) % len(dict)
+    end_gate_index = (start_index + total_gates - 1) % total_gates
     end_gate = list(dict.keys())[end_gate_index]
 
     return min_key, end_gate, min_value
