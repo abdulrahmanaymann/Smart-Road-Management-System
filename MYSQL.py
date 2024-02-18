@@ -10,9 +10,6 @@ def DB_Connection(host, port, user, password, database):
         cursor = connection.cursor()
 
         if connection.is_connected():
-            cursor.execute("SELECT DATABASE() ;")
-            db = cursor.fetchone()
-            LOGGER.info("Connected to database %s successfully", db)
             return connection, cursor
         else:
             LOGGER.error("Failed to connect to the database.")

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import json
 import pandas as pd
-from config import *
+from Config.config import *
 from MYSQL import *
 from confluent_kafka import Producer
 import redis
@@ -120,7 +120,7 @@ def process_travels_data(
             }
             redis_connection.hset(f"{travel_id_with_code}", mapping=violation_data)
             travel_key = f"{travel_id_with_code}"
-            redis_connection.expire(travel_key, int(ttl))  # Set TTL in seconds
+            redis_connection.expire(travel_key, int(ttl))
 
             LOGGER.info(
                 f"Travel ID: {travel_id_with_code}, Start Date: {start_date}, TTL (seconds): {ttl :.2f}"
@@ -220,19 +220,19 @@ def To_Nifi(r, df_governorates, id, start_Gate, end_Gate, distance):
             }
             val = list(decoded_data.values())
             if start_Gate == val[2]:
-                sg.popup("This travel is recored before")
+                print("This travel is recored before")
             else:
                 print(f"{decoded_data}")
                 r.delete(key)
                 process_travels_data(
                     id, start_Gate, distance, end_Gate, df_governorates, r
                 )
-                sg.popup_error(
+                print(
                     f"Violation Detection!!!! \nthe previous key {key.decode('utf-8')} is DELETED FROM REDIS",
                 )
 
     else:
         process_travels_data(id, start_Gate, distance, end_Gate, df_governorates, r)
-        sg.popup(
+        print(
             f"THERE IS NO such DATA in REDIS, BUT DATA SAVED TO REDIS ",
         )

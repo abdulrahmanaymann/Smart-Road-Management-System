@@ -1,4 +1,5 @@
 import threading
+
 from kafka import KafkaProducer
 from MYSQL import *
 from data_handler import *
@@ -87,6 +88,7 @@ def add_travel_record_GUI():
                 min_key, end_gate, min_value = Calaulate_Lowest_Distance(
                     start_gate, df_dict
                 )
+
                 process_new_travel_data(car_id, start_gate, min_key, min_value, p)
 
                 mes = f"id:{car_id},s_g:{start_gate},e_g:{end_gate},D:{min_value}"

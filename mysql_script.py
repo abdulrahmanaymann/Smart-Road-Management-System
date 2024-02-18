@@ -30,23 +30,17 @@ try:
                 )
                 connection.commit()
 
-                sg.popup(
+                print(
                     "DATA INSERTED SUCCESSFULLY :)",
-                    title="MySQL",
-                    icon=MYSQL_ICON,
                 )
             except Exception as e:
-                sg.popup(
+                print(
                     "Error:",
                     e,
-                    title="Oops!",
-                    icon=DIALOG_ERROR_ICON,
                 )
     else:
-        sg.popup(
+        print(
             "Error: Failed to connect to the database.",
-            title="Oops!",
-            icon=DIALOG_ERROR_ICON,
         )
 except mysql.connector.Error as err:
     print(f"Error: {err}")
