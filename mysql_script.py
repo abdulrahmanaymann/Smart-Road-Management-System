@@ -14,13 +14,6 @@ try:
     cursor = connection.cursor()
 
     if connection.is_connected():
-        cursor.execute("SELECT DATABASE() ;")
-        db = cursor.fetchone()
-        sg.popup(
-            f"Connected to database {db} successfully",
-            title="MySQL",
-            icon=MYSQL_ICON,
-        )
         for line in sys.stdin:
             try:
                 word = line.strip()

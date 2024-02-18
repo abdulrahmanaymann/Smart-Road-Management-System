@@ -6,7 +6,7 @@ REDIS_PORT = 6379
 REDIS_DB = 0
 
 # ----------------- EXCEL CONSTANTS ----------------- #
-EXCEL_FILE = "Data/New data.xlsx"
+EXCEL_FILE = "New data.xlsx"
 SHEET1 = "governorates"
 SHEET2 = "vehicles"
 SHEET3 = "travels"

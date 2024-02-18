@@ -1,9 +1,8 @@
 import threading
-
 from kafka import KafkaProducer
 from MYSQL import *
 from data_handler import *
-from config import *
+from Config.config import *
 from excel_reader import read_excel_sheets
 import PySimpleGUI as sg
 from kafka_consumer import kafka_consumer
