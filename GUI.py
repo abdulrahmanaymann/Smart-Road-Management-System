@@ -23,7 +23,7 @@ def start_kafka_consumer():
     kafka_thread.start()
 
 
-def add_travel_record_GUI():
+def add_travel_record_GUI(df_governorates):
     df_all_government.set_index("Start_gate\End_gate", inplace=True)
     df_dict = df_all_government.to_dict(orient="index")
 
@@ -89,7 +89,9 @@ def add_travel_record_GUI():
                     start_gate, df_dict
                 )
 
-                process_new_travel_data(car_id, start_gate, min_key, min_value, p)
+                process_new_travel_data(
+                    car_id, start_gate, min_key, min_value, p, df_governorates
+                )
 
                 mes = f"id:{car_id},s_g:{start_gate},e_g:{end_gate},D:{min_value}"
 

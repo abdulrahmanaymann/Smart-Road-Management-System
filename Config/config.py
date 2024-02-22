@@ -1,3 +1,4 @@
+import os
 from MYSQL import DB_Connection
 
 # ----------------- REDIS CONSTANTS ----------------- #
@@ -29,6 +30,20 @@ CONN = DB_Connection(
     MYSQL_USER,
     MYSQL_PASSWORD,
     MYSQL_DATABASE,
+)
+
+# ----------------------------- SPARK && HADOOP CONSTANTS -----------------------------#
+STDERR_REDIRECT_COMMAND = "2>/dev/null" if os.name == "posix" else "2>nul"
+
+HADOOP_PATH = "C:\\hadoop"
+TEMP_PATH = "d:\\tmp"
+TEMP = "C:\\Users\\abdel\\AppData\\Local\\Temp\\spark-93aadcea-55e8-42ad-b06b-51056bf0ee11\\pyspark-35748fd3-1191-4155-a195-16188d767d27"
+MYSQL_CONNECTOR_PATH = (
+    "C:\\Spark\\spark-3.5.0-bin-hadoop3\\jars\\mysql-connector-j-8.3.0.jar"
+)
+
+KAFKA_CONNECTOR_PATH = (
+    "C:\\Spark\\spark-3.5.0-bin-hadoop3\\jars\\spark-sql-kafka-0-10_2.12:3.5.0.jar"
 )
 
 # ----------------- ICONS PATHS ----------------- #

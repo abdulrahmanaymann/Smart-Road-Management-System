@@ -15,7 +15,7 @@ def main():
 
         insert_vehicles_data(r, df_vehicles)
 
-        add_travel_record_GUI()
+        add_travel_record_GUI(df_governorates)
 
     except Exception as e:
         LOGGER.error(f"Error: {e}")

@@ -135,10 +135,28 @@ def process_travels_data(
         LOGGER.error(f"Error occurred: {e}")
 
 
-def process_new_travel_data(id, start_gate, end_gate, distance, producer):
+def process_new_travel_data(
+    id, start_gate, end_gate, distance, producer, df_governorates
+):
     try:
+        governorates_dict = insert_governorates_data(
+            get_redis_connection(), df_governorates
+        )
+        if governorates_dict is None:
+            LOGGER.error("Error: Failed to insert governorates data into Redis.")
+            return
+
+        # Get the code for the start gate
+        start_gate_code = governorates_dict.get(start_gate, None)
+        if start_gate_code is None:
+            LOGGER.error(f"Error: Start gate code not found for '{start_gate}'.")
+            return
+
+        # Append the start gate code to the id
+        formatted_id = f"{id}-{start_gate_code}"
+
         kafka_message = {
-            "ID": id,
+            "ID": formatted_id,
             "Start Gate": start_gate,
             "End Gate": end_gate,
             "Distance": distance,
@@ -151,7 +169,7 @@ def process_new_travel_data(id, start_gate, end_gate, distance, producer):
         if conn and cursor:
             try:
                 query = "INSERT INTO travels (ID, Start_Gate, End_Gate, Distance) VALUES (%s ,%s ,%s ,%s)"
-                value = (id, start_gate, end_gate, distance)
+                value = (formatted_id, start_gate, end_gate, distance)
                 cursor.execute(query, value)
                 conn.commit()
                 LOGGER.info("Data inserted into MySQL successfully.")
@@ -162,7 +180,7 @@ def process_new_travel_data(id, start_gate, end_gate, distance, producer):
             old_records = pd.read_excel(EXCEL_FILE, sheet_name=SHEET3)
             new_record = pd.DataFrame(
                 {
-                    "ID": [id],
+                    "ID": [formatted_id],
                     "Start Gate": [start_gate],
                     "End Gate": [end_gate],
                     "Distance (KM)": [distance],
