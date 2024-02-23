@@ -111,7 +111,7 @@ joined_df_stream = violations_stream_df.join(
 
 # joined_df_stream.show()
 
-# ----------------- Write the result to the console and show message after each batch to tell me the most violated route -----------------
+# ----------------- Write the result to the console  -----------------
 query = (
     joined_df_stream.writeStream.outputMode("update")
     .format("console")
