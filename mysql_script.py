@@ -36,20 +36,29 @@ try:
                 print(
                     "DATA INSERTED SUCCESSFULLY :)",
                 )
-                #---------------------------------------------------------------
+                # ---------------------------------------------------------------
+                cursor.execute(
+                    "SELECT Start_Gate, End_Gate FROM travels WHERE ID = %s", (car_str,)
+                )
+                travel_data = cursor.fetchone()
+                start_gate, end_gate = travel_data
+
                 kafka_message = {
                     "ID": car_str,
+                    "Start Gate": start_gate,
+                    "End Gate": end_gate,
                     "Start Date": start_date,
                     "End Date": end_date,
                 }
+
                 p.produce(
                     VIOLATIONS_TOPIC,
                     key=car_str.encode("utf-8"),
                     value=str(kafka_message).encode("utf-8"),
                 )
                 p.flush()
-                print("Data sent to Kafka topic:", KAFKA_TOPIC)
-                #---------------------------------------------------------------
+                print("Data sent to Kafka topic:", VIOLATIONS_TOPIC)
+                # ---------------------------------------------------------------
             except Exception as e:
                 print(
                     "Error:",
