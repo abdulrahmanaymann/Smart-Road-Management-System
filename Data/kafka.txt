@@ -20,6 +20,8 @@ bin\windows\kafka-console-producer.bat --topic travel-data  --bootstrap-server l
 
 bin\windows\kafka-console-consumer.bat --topic travel_data  --bootstrap-server localhost:9092 --from-beginning
 
+bin\windows\kafka-console-consumer.bat --topic violations  --bootstrap-server localhost:9092 --from-beginning
+
 -----------------
 
 The topics list:

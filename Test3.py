@@ -92,7 +92,7 @@ violations_df.show()
 Most violated route: Row(Start_Gate='Giza', End_Gate='Qalyubia', Violation_Count=5)
 
 """
-
+""" 
 joined_df = travels_df.join(
     violations_df, travels_df["ID"] == violations_df["Car_ID"], "inner"
 )
@@ -115,19 +115,69 @@ route_violations_df = joined_df.groupBy("Start_Gate", "End_Gate").agg(
 )
 most_violated_route = route_violations_df.orderBy(col("Violation_Count").desc()).first()
 
-LOGGER.info(f"Most violated route: {most_violated_route}")
+LOGGER.info(f"Most violated route: {most_violated_route}") """
 
 # ----------------- Read Kafka Stream -----------------
-df = (
+travels = (
     spark.readStream.format("kafka")
     .option("kafka.bootstrap.servers", KAFKA_BROKER)
     .option("subscribe", KAFKA_TOPIC)
+    .option("startingOffsets", "latest")
     .load()
 )
 
-# ----------------- Write Kafka Stream to Console -----------------
-query = df.writeStream.outputMode("append").format("console").start()
-query.awaitTermination()
+# Consumer: {"ID": "123_Car", "Start Gate": "Cairo", "End Gate": "Giza", "Distance": 6.9}
+schema = StructType(
+    [
+        StructField("ID", StringType(), True),
+        StructField("Start Gate", StringType(), True),
+        StructField("End Gate", StringType(), True),
+        StructField("Distance", DoubleType(), True),
+    ]
+)
 
-# ----------------- Stop SparkSession -----------------
-spark.stop()
+# Convert the value column to a string
+travels = travels.withColumn("value", travels["value"].cast(StringType()))
+travels = travels.withColumn("value", from_json("value", schema))
+travels = travels.select(col("value.*"))
+LOGGER.info("Travels Schema")
+
+violations = (
+    spark.readStream.format("kafka")
+    .option("kafka.bootstrap.servers", KAFKA_BROKER)
+    .option("subscribe", VIOLATIONS_TOPIC)
+    .option("startingOffsets", "latest")
+    .load()
+)
+
+# Consumer: {'ID': '30_Car-GIZ', 'Start Date': '2024-02-23 01:49:34', 'End Date': '2024-02-23 01:49:43'}
+violations_schema = StructType(
+    [
+        StructField("ID", StringType(), True),
+        StructField("Start Date", StringType(), True),
+        StructField("End Date", StringType(), True),
+    ]
+)
+
+violations = violations.withColumn("value", violations["value"].cast(StringType()))
+violations = violations.withColumn("value", from_json("value", violations_schema))
+violations = violations.select(col("value.*"))
+LOGGER.info("Violations Schema")
+
+# ----------------- Join the two streams -----------------
+joined_stream = travels.join(violations, travels["ID"] == violations["ID"], "inner")
+
+result_stream = joined_stream.select(
+    violations["ID"],
+    travels["Start Gate"],
+    travels["End Gate"],
+    violations["Start Date"],
+    violations["End Date"],
+)
+LOGGER.info("Joined Stream Schema")
+
+# ----------------- Write the joined stream to the console -----------------
+query = result_stream.writeStream.outputMode("append").format("console").start()
+
+query.awaitTermination()
+query.stop()
