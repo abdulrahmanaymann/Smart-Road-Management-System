@@ -33,7 +33,7 @@ travels_df = (
     .option("password", MYSQL_PASSWORD)
     .load()
 )
-travels_df.show()
+# travels_df.show()
 
 # ----------------- Read violations table from MySQL -----------------
 violations_df = (
@@ -45,7 +45,7 @@ violations_df = (
     .load()
 )
 
-violations_df.show()
+# violations_df.show()
 
 # ----------------- Join the two tables -----------------
 joined_df = (
@@ -60,7 +60,7 @@ joined_df = (
     .orderBy(violations_df["Start_Date"])
 )
 
-joined_df.show()
+# joined_df.show()
 
 # ----------------- Count the number of violations for each route -----------------
 route_violations = (
@@ -76,7 +76,7 @@ violations_stream_df = (
     spark.readStream.format("kafka")
     .option("kafka.bootstrap.servers", KAFKA_BROKER)
     .option("subscribe", VIOLATIONS_TOPIC)
-    .option("startingOffsets", "earliest")
+    .option("startingOffsets", "latest")
     .load()
 )
 
@@ -98,65 +98,31 @@ violations_stream_df = (
 )
 
 # ----------------- Count the number of violations for each route and print start gate end gate count -----------------
-route_violations_stream = (
-    violations_stream_df.groupBy("Start Gate", "End Gate")
-    .count()
-    .orderBy("count", ascending=False)
+joined_df_stream = violations_stream_df.join(
+    route_violations,
+    (violations_stream_df["Start Gate"] == route_violations["Start_Gate"])
+    & (violations_stream_df["End Gate"] == route_violations["End_Gate"]),
+    "inner",
+).select(
+    violations_stream_df["Start Gate"],
+    violations_stream_df["End Gate"],
+    (route_violations["count"]).alias("Total Violations"),
 )
 
+# joined_df_stream.show()
+
+# ----------------- Write the result to the console and show message after each batch to tell me the most violated route -----------------
 query = (
-    route_violations_stream.writeStream.outputMode("complete")
+    joined_df_stream.writeStream.outputMode("update")
     .format("console")
     .option("truncate", "false")
+    .foreachBatch(
+        lambda df, epoch_id: print(
+            f"Batch: {epoch_id}, Most Violated Route: {df.orderBy('Total Violations', ascending=False).first()['Start Gate']} to {df.orderBy('Total Violations', ascending=False).first()['End Gate']} with {df.orderBy('Total Violations', ascending=False).first()['Total Violations']} violations"
+        )
+    )
     .start()
 )
 
 query.awaitTermination()
-
-
-
-
-
-
-
-""" 
-# Violations count for each route from MYSQL
-+----------+--------+-----+
-|Start_Gate|End_Gate|count|
-+----------+--------+-----+
-|      Giza|Qalyubia|   33|
-|   Monufia| Gharbia|    1|
-+----------+--------+-----+
-
-# Violations count for each route from Kafka stream
--------------------------------------------
-Batch: 1
--------------------------------------------
-+----------+--------+-----+
-|Start Gate|End Gate|count|
-+----------+--------+-----+
-|Giza      |Qalyubia|1    |
-+----------+--------+-----+ 
-"""
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+spark.stop()
