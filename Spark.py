@@ -1,12 +1,9 @@
 import findspark
 from pyspark.sql import SparkSession
-import pyspark.sql.functions as F
-from pyspark.sql.functions import *
-from pyspark.sql.streaming import DataStreamReader
-from pyspark.sql.types import *
-import os
-from Config.Logger import *
+from pyspark.sql.types import StructType, StructField, StringType
+from pyspark.sql.functions import from_json
 from Config.config import *
+from Config.Logger import *
 
 # ----------------- Init and find Spark -----------------
 findspark.init()
