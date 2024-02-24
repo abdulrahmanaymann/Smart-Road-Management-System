@@ -166,7 +166,7 @@ route_vehicle_violations = (
     .orderBy("count", ascending=False)
 ).dropDuplicates(["Start_Gate", "End_Gate"])
 
-# // route_vehicle_violations.show()
+route_vehicle_violations.show()
 
 stream_joined_df = violations_stream_df.join(
     route_vehicle_violations,
