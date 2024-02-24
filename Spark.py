@@ -1,15 +1,15 @@
 import findspark
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType
-from pyspark.sql.functions import from_json
+from pyspark.sql.functions import from_json, sum
 from Config.config import *
 from Config.Logger import *
 
-# ----------------- Init and find Spark -----------------
+# ** ----------------- Init and find Spark -----------------
 findspark.init()
 findspark.find()
 
-# ----------------- Create SparkSession -----------------
+# ** ----------------- Create SparkSession -----------------
 spark = (
     SparkSession.builder.appName("Spark")
     .config("spark.streaming.stopGracefullyOnShutdown", True)
@@ -21,7 +21,7 @@ spark = (
     .getOrCreate()
 )
 
-# ----------------- Read travels table from MySQL -----------------
+# ** ----------------- Read travels table from MySQL -----------------
 travels_df = (
     spark.read.format("jdbc")
     .option("url", f"jdbc:mysql://{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
@@ -29,10 +29,13 @@ travels_df = (
     .option("user", MYSQL_USER)
     .option("password", MYSQL_PASSWORD)
     .load()
-)
-# travels_df.show()
+).dropDuplicates()
 
-# ----------------- Read violations table from MySQL -----------------
+# // travels_df.show()
+a = travels_df.count()
+print(f"Number of records ( Travels ): {a}")
+
+# ** ----------------- Read violations table from MySQL -----------------
 violations_df = (
     spark.read.format("jdbc")
     .option("url", f"jdbc:mysql://{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
@@ -40,11 +43,13 @@ violations_df = (
     .option("user", MYSQL_USER)
     .option("password", MYSQL_PASSWORD)
     .load()
-)
+).dropDuplicates()
 
-# violations_df.show()
+# // violations_df.show()
+b = violations_df.count()
+print(f"Number of records ( Violations ): {b}")
 
-# ----------------- Join the two tables -----------------
+# ** ----------------- Join the two tables -----------------
 joined_df = (
     travels_df.join(violations_df, travels_df["ID"] == violations_df["Car_ID"], "inner")
     .select(
@@ -55,11 +60,15 @@ joined_df = (
         violations_df["End_Date"],
     )
     .orderBy(violations_df["Start_Date"])
-)
+).dropDuplicates()
 
-# joined_df.show()
+# show the count
+c = joined_df.count()
+print(f"Number of records ( Joind ): {c}")
 
-# ----------------- Count the number of violations for each route -----------------
+# // joined_df.show()
+
+# ** ----------------- Count the number of violations for each route -----------------
 route_violations = (
     joined_df.groupBy("Start_Gate", "End_Gate")
     .count()
@@ -68,7 +77,7 @@ route_violations = (
 
 route_violations.show()
 
-# ----------------- Read Kafka Stream -----------------
+# ** ----------------- Read Kafka Stream -----------------
 violations_stream_df = (
     spark.readStream.format("kafka")
     .option("kafka.bootstrap.servers", KAFKA_BROKER)
@@ -77,7 +86,9 @@ violations_stream_df = (
     .load()
 )
 
-# Consumer: {'ID': '70_Car-GIZ', 'Start Gate': 'Giza', 'End Gate': 'Qalyubia', 'Start Date': '2024-02-23 14:52:59', 'End Date': '2024-02-23 14:53:06'}
+""" 
+Consumer: {'ID': '70_Car-GIZ', 'Start Gate': 'Giza', 'End Gate': 'Qalyubia', 'Start Date': '2024-02-23 14:52:59', 'End Date': '2024-02-23 14:53:06'}
+"""
 violations_schema = StructType(
     [
         StructField("ID", StringType(), True),
@@ -94,7 +105,7 @@ violations_stream_df = (
     .select("data.*")
 )
 
-# ----------------- Count the number of violations for each route and print start gate end gate count -----------------
+# ** ----------------- Count the number of violations for each route  -----------------
 joined_df_stream = violations_stream_df.join(
     route_violations,
     (violations_stream_df["Start Gate"] == route_violations["Start_Gate"])
@@ -106,16 +117,35 @@ joined_df_stream = violations_stream_df.join(
     (route_violations["count"]).alias("Total Violations"),
 )
 
-# joined_df_stream.show()
+# // joined_df_stream.show()
 
-# ----------------- Write the result to the console  -----------------
-query = (
+# ** ----------------- Write the result to the console  -----------------
+""" query = (
     joined_df_stream.writeStream.outputMode("update")
     .format("console")
     .option("truncate", "false")
     .foreachBatch(
         lambda df, epoch_id: print(
             f"Batch: {epoch_id}, Most Violated Route: {df.orderBy('Total Violations', ascending=False).first()['Start Gate']} to {df.orderBy('Total Violations', ascending=False).first()['End Gate']} with {df.orderBy('Total Violations', ascending=False).first()['Total Violations']} violations"
+        )
+    )
+    .start()
+)
+
+query.awaitTermination()
+spark.stop()
+ """
+# ** ----------------- Count the total number of violations -----------------
+total_violations = violations_df.count()
+print(f"Total Violations: {total_violations}")
+
+query = (
+    violations_stream_df.writeStream.outputMode("update")
+    .format("console")
+    .option("truncate", "false")
+    .foreachBatch(
+        lambda df, epoch_id: print(
+            f"Batch: {epoch_id}, Total Violations: {df.count() + total_violations}"
         )
     )
     .start()

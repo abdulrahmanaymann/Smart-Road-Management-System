@@ -146,13 +146,11 @@ def process_new_travel_data(
             LOGGER.error("Error: Failed to insert governorates data into Redis.")
             return
 
-        # Get the code for the start gate
         start_gate_code = governorates_dict.get(start_gate, None)
         if start_gate_code is None:
             LOGGER.error(f"Error: Start gate code not found for '{start_gate}'.")
             return
 
-        # Append the start gate code to the id
         formatted_id = f"{id}-{start_gate_code}"
 
         kafka_message = {
