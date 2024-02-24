@@ -73,7 +73,7 @@ route_violations = (
     .orderBy("count", ascending=False)
 )
 
-route_violations.show()
+# // route_violations.show()
 
 # ** ----------------- Read Kafka Stream -----------------
 violations_stream_df = (
@@ -136,7 +136,7 @@ spark.stop()
 
 # ** ----------------- Count the total number of violations -----------------
 total_violations = violations_df.count()
-print(f"Total Violations: {total_violations}")
+# // print(f"Total Violations: {total_violations}")
 
 # ** ----------------- The Second Query -----------------
 """ query = (
@@ -189,17 +189,3 @@ query = (
 )
 
 query.awaitTermination()
-
-# ** ----------------- The most violated vehicle type in violation_df -----------------
-most_violated_vehicle = (
-    joined_df.groupBy("Vehicle_Type").count().orderBy("count", ascending=False)
-).first()["Vehicle_Type"]
-
-v_count = (
-    joined_df.groupBy("Vehicle_Type")
-    .count()
-    .orderBy("count", ascending=False)
-    .first()["count"]
-)
-
-print(f"The most violated vehicle type: {most_violated_vehicle}, Count: {v_count}")
