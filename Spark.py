@@ -1,7 +1,7 @@
 import findspark
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType
-from pyspark.sql.functions import from_json, sum
+from pyspark.sql.functions import from_json, split, expr
 from Config.config import *
 from Config.Logger import *
 
@@ -33,7 +33,7 @@ travels_df = (
 
 # // travels_df.show()
 a = travels_df.count()
-print(f"Number of records ( Travels ): {a}")
+# // print(f"Number of records ( Travels ): {a}")
 
 # ** ----------------- Read violations table from MySQL -----------------
 violations_df = (
@@ -47,7 +47,7 @@ violations_df = (
 
 # // violations_df.show()
 b = violations_df.count()
-print(f"Number of records ( Violations ): {b}")
+# // print(f"Number of records ( Violations ): {b}")
 
 # ** ----------------- Join the two tables -----------------
 joined_df = (
@@ -62,13 +62,11 @@ joined_df = (
     .orderBy(violations_df["Start_Date"])
 ).dropDuplicates()
 
-# show the count
 c = joined_df.count()
-print(f"Number of records ( Joind ): {c}")
-
+# // print(f"Number of records ( Joind ): {c}")
 # // joined_df.show()
 
-# ** ----------------- Count the number of violations for each route -----------------
+# ** ----------------- Count the number of violations for each route ( MYSQL ) -----------------
 route_violations = (
     joined_df.groupBy("Start_Gate", "End_Gate")
     .count()
@@ -119,7 +117,7 @@ joined_df_stream = violations_stream_df.join(
 
 # // joined_df_stream.show()
 
-# ** ----------------- Write the result to the console  -----------------
+# ** ----------------- The First Query -----------------
 """ query = (
     joined_df_stream.writeStream.outputMode("update")
     .format("console")
@@ -135,11 +133,13 @@ joined_df_stream = violations_stream_df.join(
 query.awaitTermination()
 spark.stop()
  """
+
 # ** ----------------- Count the total number of violations -----------------
 total_violations = violations_df.count()
 print(f"Total Violations: {total_violations}")
 
-query = (
+# ** ----------------- The Second Query -----------------
+""" query = (
     violations_stream_df.writeStream.outputMode("update")
     .format("console")
     .option("truncate", "false")
@@ -152,4 +152,54 @@ query = (
 )
 
 query.awaitTermination()
-spark.stop()
+spark.stop() """
+
+# ** ----------------- Count the number of violations for each route  -----------------
+joined_df = joined_df.withColumn("Vehicle_Type", split(joined_df["Car_ID"], "_")[1])
+joined_df = joined_df.withColumn(
+    "Vehicle_Type", split(joined_df["Vehicle_Type"], "-")[0]
+)
+
+route_vehicle_violations = (
+    joined_df.groupBy("Start_Gate", "End_Gate", "Vehicle_Type")
+    .count()
+    .orderBy("count", ascending=False)
+).dropDuplicates(["Start_Gate", "End_Gate"])
+
+# // route_vehicle_violations.show()
+
+stream_joined_df = violations_stream_df.join(
+    route_vehicle_violations,
+    (violations_stream_df["Start Gate"] == route_vehicle_violations["Start_Gate"])
+    & (violations_stream_df["End Gate"] == route_vehicle_violations["End_Gate"]),
+    "inner",
+).select(
+    violations_stream_df["Start Gate"],
+    violations_stream_df["End Gate"],
+    route_vehicle_violations["Vehicle_Type"],
+    route_vehicle_violations["count"],
+)
+
+# ** ----------------- The Third Query -----------------
+query = (
+    stream_joined_df.writeStream.outputMode("update")
+    .format("console")
+    .option("truncate", "false")
+    .start()
+)
+
+query.awaitTermination()
+
+# ** ----------------- The most violated vehicle type in violation_df -----------------
+most_violated_vehicle = (
+    joined_df.groupBy("Vehicle_Type").count().orderBy("count", ascending=False)
+).first()["Vehicle_Type"]
+
+v_count = (
+    joined_df.groupBy("Vehicle_Type")
+    .count()
+    .orderBy("count", ascending=False)
+    .first()["count"]
+)
+
+print(f"The most violated vehicle type: {most_violated_vehicle}, Count: {v_count}")
