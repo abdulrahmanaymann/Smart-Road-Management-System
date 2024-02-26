@@ -1,3 +1,4 @@
+from math import e
 import findspark
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType
@@ -16,38 +17,26 @@ spark = (
     .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0")
     .config("spark.jars", MYSQL_CONNECTOR_PATH)
     .config("spark.driver.extraClassPath", MYSQL_CONNECTOR_PATH)
-    .config("spark.sql.shuffle.partitions", 4)
+    .config("spark.sql.shuffle.partitions", 8)
     .master("local[*]")
     .getOrCreate()
 )
 
-# ** ----------------- Read travels table from MySQL -----------------
-travels_df = (
-    spark.read.format("jdbc")
-    .option("url", f"jdbc:mysql://{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
-    .option("dbtable", "travels")
-    .option("user", MYSQL_USER)
-    .option("password", MYSQL_PASSWORD)
-    .load()
-).dropDuplicates()
 
-# // travels_df.show()
-a = travels_df.count()
-# // print(f"Number of records ( Travels ): {a}")
+# ** ----------------- Read tables from MySQL -----------------
+def read_mysql_table(table_name):
+    return (
+        spark.read.format("jdbc")
+        .option("url", f"jdbc:mysql://{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
+        .option("dbtable", table_name)
+        .option("user", MYSQL_USER)
+        .option("password", MYSQL_PASSWORD)
+        .load()
+    )
 
-# ** ----------------- Read violations table from MySQL -----------------
-violations_df = (
-    spark.read.format("jdbc")
-    .option("url", f"jdbc:mysql://{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
-    .option("dbtable", "violations")
-    .option("user", MYSQL_USER)
-    .option("password", MYSQL_PASSWORD)
-    .load()
-).dropDuplicates()
 
-# // violations_df.show()
-b = violations_df.count()
-# // print(f"Number of records ( Violations ): {b}")
+travels_df = read_mysql_table("travels").dropDuplicates().cache()
+violations_df = read_mysql_table("violations").dropDuplicates().cache()
 
 # ** ----------------- Join the two tables -----------------
 joined_df = (
@@ -60,20 +49,15 @@ joined_df = (
         violations_df["End_Date"],
     )
     .orderBy(violations_df["Start_Date"])
-).dropDuplicates()
-
-c = joined_df.count()
-# // print(f"Number of records ( Joind ): {c}")
-# // joined_df.show()
+)
 
 # ** ----------------- Count the number of violations for each route ( MYSQL ) -----------------
 route_violations = (
     joined_df.groupBy("Start_Gate", "End_Gate")
     .count()
     .orderBy("count", ascending=False)
+    .cache()
 )
-
-# // route_violations.show()
 
 # ** ----------------- Read Kafka Stream -----------------
 violations_stream_df = (
@@ -84,9 +68,6 @@ violations_stream_df = (
     .load()
 )
 
-""" 
-Consumer: {'ID': '70_Car-GIZ', 'Start Gate': 'Giza', 'End Gate': 'Qalyubia', 'Start Date': '2024-02-23 14:52:59', 'End Date': '2024-02-23 14:53:06'}
-"""
 violations_schema = StructType(
     [
         StructField("ID", StringType(), True),
@@ -115,45 +96,6 @@ joined_df_stream = violations_stream_df.join(
     (route_violations["count"]).alias("Total Violations"),
 )
 
-# // joined_df_stream.show()
-
-# ** ----------------- The First Query -----------------
-""" query = (
-    joined_df_stream.writeStream.outputMode("update")
-    .format("console")
-    .option("truncate", "false")
-    .foreachBatch(
-        lambda df, epoch_id: print(
-            f"Batch: {epoch_id}, Most Violated Route: {df.orderBy('Total Violations', ascending=False).first()['Start Gate']} to {df.orderBy('Total Violations', ascending=False).first()['End Gate']} with {df.orderBy('Total Violations', ascending=False).first()['Total Violations']} violations"
-        )
-    )
-    .start()
-)
-
-query.awaitTermination()
-spark.stop()
- """
-
-# ** ----------------- Count the total number of violations -----------------
-total_violations = violations_df.count()
-# // print(f"Total Violations: {total_violations}")
-
-# ** ----------------- The Second Query -----------------
-""" query = (
-    violations_stream_df.writeStream.outputMode("update")
-    .format("console")
-    .option("truncate", "false")
-    .foreachBatch(
-        lambda df, epoch_id: print(
-            f"Batch: {epoch_id}, Total Violations: {df.count() + total_violations}"
-        )
-    )
-    .start()
-)
-
-query.awaitTermination()
-spark.stop() """
-
 # ** ----------------- Count the number of violations for each route  -----------------
 joined_df = joined_df.withColumn("Vehicle_Type", split(joined_df["Car_ID"], "_")[1])
 joined_df = joined_df.withColumn(
@@ -161,12 +103,14 @@ joined_df = joined_df.withColumn(
 )
 
 route_vehicle_violations = (
-    joined_df.groupBy("Start_Gate", "End_Gate", "Vehicle_Type")
-    .count()
-    .orderBy("count", ascending=False)
-).dropDuplicates(["Start_Gate", "End_Gate"])
-
-route_vehicle_violations.show()
+    (
+        joined_df.groupBy("Start_Gate", "End_Gate", "Vehicle_Type")
+        .count()
+        .orderBy("count", ascending=False)
+    )
+    .dropDuplicates(["Start_Gate", "End_Gate"])
+    .cache()
+)
 
 stream_joined_df = violations_stream_df.join(
     route_vehicle_violations,
@@ -180,12 +124,55 @@ stream_joined_df = violations_stream_df.join(
     route_vehicle_violations["count"],
 )
 
-# ** ----------------- The Third Query -----------------
-query = (
-    stream_joined_df.writeStream.outputMode("update")
-    .format("console")
-    .option("truncate", "false")
-    .start()
-)
+# ** ----------------- The First Query -----------------
+try:
+    query1 = (
+        joined_df_stream.writeStream.outputMode("update")
+        .format("console")
+        .option("truncate", "false")
+        .start()
+    )
 
-query.awaitTermination()
+    query1.awaitTermination()
+except Exception as e:
+    LOGGER.error(f"Error in Query1: {e}")
+
+# ** ----------------- The Second Query -----------------
+total_violations = violations_df.count()  # Count the total number of violations
+
+try:
+    query2 = (
+        violations_stream_df.writeStream.outputMode("update")
+        .format("console")
+        .option("truncate", "false")
+        .foreachBatch(
+            lambda df, epoch_id: print(
+                f"Batch: {epoch_id}, Total Violations: {df.count() + total_violations}"
+            )
+        )
+        .start()
+    )
+
+    query2.awaitTermination()
+except Exception as e:
+    LOGGER.error(f"Error in Query2: {e}")
+
+# ** ----------------- The Third Query -----------------
+try:
+    query3 = (
+        stream_joined_df.writeStream.outputMode("update")
+        .format("console")
+        .foreachBatch(
+            lambda df, epoch_id: df.foreach(
+                lambda row: print(
+                    f"Epoch ID: {epoch_id}, Route: {row['Start Gate']} to {row['End Gate']}, Vehicle Type: {row['Vehicle_Type']}, Count: {row['count']}"
+                )
+            )
+        )
+        .option("truncate", "false")
+        .start()
+    )
+
+    query3.awaitTermination()
+except Exception as e:
+    LOGGER.error(f"Error in Query3: {e}")
