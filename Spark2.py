@@ -8,7 +8,7 @@ spark = SparkSession.builder.appName("MySQLStreamProcessing").getOrCreate()
 
 # Configure MySQL connection properties
 jdbc_url = "jdbc:mysql://localhost:3306/py_test_db"
-jdbc_driver = "com.mysql.jdbc.Driver"
+jdbc_driver = "com.mysql.cj.jdbc.Driver"
 jdbc_username = "root"
 jdbc_password = ""
 
@@ -100,6 +100,3 @@ while True:
 
     # Sleep for a certain duration before polling again
     sleep(10)  # Adjust the sleep duration as needed
-
-# # Stop the SparkSession
-spark.stop()

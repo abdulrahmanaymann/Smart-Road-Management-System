@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 01, 2023 at 05:23 PM
+-- Generation Time: Feb 26, 2024 at 08:04 PM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -39,63 +39,29 @@ CREATE TABLE `travels` (
 --
 
 INSERT INTO `travels` (`ID`, `Start_Gate`, `End_Gate`, `Distance`) VALUES
-('110_Car', 'Aswan', 'Alexandria', 1000),
-('711_Car', 'Giza', 'Cairo', 1),
-('181_Bus', 'Giza', 'Cairo', 2),
-('616_Car', 'Giza', 'Aswan', 700),
-('717_Car', 'Giza', 'Aswan', 700),
-('110_Bus', 'Giza', 'Cairo', 17),
-('411_Car', 'Bus', 'Cairo', 2),
-('981_Car', 'Cairo', 'Alexandria', 100),
-('123_Car', 'giza', 'Aswan', 12),
-('911_Bus', 'Giza', 'Cairo', 5),
-('981_Car', 'Giza', 'Aswan', 700),
-('911_Car', 'Cairo', 'Giza', 6),
-('654_Bus', 'Giza', 'Aswan', 400),
-('11_Car', 'Aswan', 'Giza', 6),
-('115_Car', 'Giza', 'Aswan', 100),
-('112_Car', 'Giza', 'Cairo', 6),
-('112_Car', 'Giza', 'Cairo', 6),
-('123_Car', 'Aswan', 'Giza', 100),
-('123_Car', 'Cairo', 'Aswan', 2),
-('999_Bus', 'Aswan', 'Luxor', 242),
-('101_Bus', 'Cairo', 'Giza', 17),
-('789_Motor', 'Aswan', 'Luxor', 242),
-('900_Car', 'Cairo', 'Giza', 17),
-('1000_Car', 'Cairo', 'Giza', 17),
-('1001_Car', 'Cairo', 'Giza', 17),
-('1200_Car', 'Aswan', 'Luxor', 242),
-('1200_Car', 'Aswan', 'Luxor', 242),
-('120_Car', 'Cairo', 'Giza', 17),
-('111_Car', 'Aswan', 'Luxor', 242),
-('111_Car', 'Aswan', 'Luxor', 242),
-('131_Car', 'Cairo', 'Giza', 17),
-('131_Car', 'Cairo', 'Giza', 17),
-('131_Car', 'Aswan', 'Luxor', 242),
-('222_Car', 'Aswan', 'Luxor', 242),
-('222_Car', 'Cairo', 'Giza', 17),
-('010_Motor', 'Luxor', 'Qena', 68),
-('555_Car', 'Aswan', 'Luxor', 242),
-('12345_Car', 'Aswan', 'Luxor', 242),
-('432_Car', 'Giza', 'Cairo', 17),
-('156_Car', 'Luxor', 'Qena', 68),
-('000_Bus', 'Cairo', 'Giza', 17),
-('777_Bus', 'Aswan', 'Luxor', 242),
-('676_Bus', 'Cairo', 'Giza', 17),
-('324_Car', 'Cairo', 'Giza', 17),
-('12_car', 'Cairo', 'Giza', 17),
-('321_Car', 'Cairo', 'Giza', 17),
-('123_Bus', 'Luxor', 'Qena', 68),
-('123_Car', 'Luxor', 'Qena', 68),
-('321_Car', 'Aswan', 'Luxor', 242),
-('111_Car', 'Aswan', 'Luxor', 242),
-('122_Car', 'Aswan', 'Luxor', 242),
-('122_Car', 'Aswan', 'Luxor', 242),
-('122_Car', 'Luxor', 'Qena', 68),
-('12111_Car', 'Cairo', 'Giza', 17),
-('213_Bus', 'Cairo', 'Giza', 17),
-('911_Car', 'Aswan', 'Luxor', 242),
-('911_Car', 'Aswan', 'Luxor', 242);
+('1110_Car', 'Cairo', 'Giza', 7),
+('1110_Car', 'Qena', 'Luxor', 82),
+('1110_Car', 'Qena', 'Luxor', 82),
+('1110_Car', 'Luxor', 'Aswan', 194),
+('1110_Car', 'Cairo', 'Giza', 7),
+('1110_Car', 'Giza', 'Qalyubia', 32),
+('1110_Car', 'Cairo', 'Giza', 7),
+('1110_Taxi', 'Cairo', 'Giza', 7),
+('1110_Taxi', 'Giza', 'Qalyubia', 32),
+('1110_Taxi', 'Qalyubia', 'Monufia', 85),
+('1110_Taxi', 'Qalyubia', 'Monufia', 85),
+('1110_Taxi', 'Monufia', 'Gharbia', 44),
+('1110_Taxi', 'Gharbia', 'Kafr El Sheikh', 52),
+('1110_Taxi', 'Kafr El Sheikh', 'Damietta', 129),
+('1110_Taxi', 'Damietta', 'Port Said', 94),
+('1110_Taxi', 'Port Said', 'Minya', 444),
+('1110_Taxi', 'Minya', 'Assiut', 187),
+('1110_Taxi', 'Assiut', 'Sohag', 191),
+('1110_Taxi', 'Sohag', 'Qena', 92),
+('1110_Taxi', 'Giza', 'Qalyubia', 32),
+('1110_Taxi', 'Luxor', 'Aswan', 194),
+('1110_Taxi', 'Giza', 'Qalyubia', 32),
+('1110_Taxi', 'Qena', 'Luxor', 82);
 
 -- --------------------------------------------------------
 
@@ -104,23 +70,36 @@ INSERT INTO `travels` (`ID`, `Start_Gate`, `End_Gate`, `Distance`) VALUES
 --
 
 CREATE TABLE `violations` (
-  `Car_ID` varchar(255) DEFAULT NULL,
-  `Start_Date` varchar(255) DEFAULT NULL,
-  `End_Date` varchar(255) DEFAULT NULL
+  `Car_ID` longtext DEFAULT NULL,
+  `Start_Gate` varchar(255) DEFAULT NULL,
+  `End_Gate` varchar(255) DEFAULT NULL,
+  `Start_Date` longtext DEFAULT NULL,
+  `End_Date` longtext DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `violations`
 --
 
-INSERT INTO `violations` (`Car_ID`, `Start_Date`, `End_Date`) VALUES
-('290_Car', '2023-10-31 14:20:54', '2023-10-31 20:29:27'),
-('181_Bus', '2023-11-01 11:45:43', '2023-11-01 11:46:31'),
-('717_Car', '2023-11-01 13:07:35', '2023-11-01 13:08:04'),
-('616_Car', '2023-11-01 13:07:35', '2023-11-01 13:11:41'),
-('717_Car', '2023-11-01 13:07:35', '2023-11-01 13:12:19'),
-('112_Car', '2023-11-01 13:43:14', '2023-11-01 13:44:19'),
-('777_Bus', '2023-11-29 05:50:47', '2023-11-29 05:52:03');
+INSERT INTO `violations` (`Car_ID`, `Start_Gate`, `End_Gate`, `Start_Date`, `End_Date`) VALUES
+('1110_Car', 'Cairo', 'Giza', '2024-02-26 00:25:36', '2024-02-26 01:58:45'),
+('1110_Car', 'Qena', 'Luxor', '2024-02-26 01:59:47', '2024-02-26 02:00:10'),
+('1110_Car', 'Luxor', 'Aswan', '2024-02-26 02:00:08', '2024-02-26 02:01:05'),
+('1110_Car', 'Cairo', 'Giza', '2024-02-26 02:01:02', '2024-02-26 02:01:14'),
+('1110_Car', 'Giza', 'Qalyubia', '2024-02-26 02:01:12', '2024-02-26 02:01:23'),
+('1110_Taxi', 'Cairo', 'Giza', '2024-02-26 04:59:32', '2024-02-26 04:59:48'),
+('1110_Taxi', 'Giza', 'Qalyubia', '2024-02-26 04:59:42', '2024-02-26 05:00:33'),
+('1110_Taxi', 'Qalyubia', 'Monufia', '2024-02-26 16:50:04', '2024-02-26 16:50:23'),
+('1110_Taxi', 'Monufia', 'Sharqia', '2024-02-26 16:50:18', '2024-02-26 16:50:37'),
+('1110_Taxi', 'Gharbia', 'Beni Suef', '2024-02-26 16:50:32', '2024-02-26 16:50:49'),
+('1110_Taxi', 'Kafr El Sheikh', 'Damietta', '2024-02-26 16:50:46', '2024-02-26 16:51:24'),
+('1110_Taxi', 'Damietta', 'Alexandria', '2024-02-26 16:50:57', '2024-02-26 16:51:30'),
+('1110_Taxi', 'Port Said', 'Minya', '2024-02-26 16:51:25', '2024-02-26 16:51:34'),
+('1110_Taxi', 'Minya', 'Assiut', '2024-02-26 16:51:30', '2024-02-26 16:51:37'),
+('1110_Taxi', 'Sohag', 'Qena', '2024-02-26 16:51:37', '2024-02-26 16:52:39'),
+('1110_Taxi', 'Giza', 'Qalyubia', '2024-02-26 16:52:37', '2024-02-26 16:52:59'),
+('1110_Taxi', 'Luxor', 'Aswan', '2024-02-26 16:52:56', '2024-02-26 16:53:14'),
+('1110_Taxi', 'Giza', 'Qalyubia', '2024-02-26 16:53:11', '2024-02-26 16:53:26');
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

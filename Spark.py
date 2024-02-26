@@ -165,7 +165,7 @@ try:
         .foreachBatch(
             lambda df, epoch_id: df.foreach(
                 lambda row: print(
-                    f"Epoch ID: {epoch_id}, Route: {row['Start Gate']} to {row['End Gate']}, Vehicle Type: {row['Vehicle_Type']}, Count: {row['count']}"
+                    f"Epoch ID: {epoch_id}, Route: {row['Start Gate']} to {row['End Gate']}, Vehicle Type: {row['Vehicle_Type']}, Violations Count: {row['count']}"
                 )
             )
         )
