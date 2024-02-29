@@ -1,8 +1,8 @@
-from math import e
 import findspark
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType
-from pyspark.sql.functions import from_json, split, expr
+from pyspark.sql import functions as F
+from pyspark.sql.functions import from_json, col, sum
 from Config.config import *
 from Config.Logger import *
 
@@ -23,52 +23,44 @@ spark = (
 )
 
 
-# ** ----------------- Read tables from MySQL -----------------
-def read_mysql_table(table_name):
-    return (
+# ** ----------------- Read from MYSQL -----------------
+def read_from_mysql(table_name):
+    df = (
         spark.read.format("jdbc")
-        .option("url", f"jdbc:mysql://{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
+        .option("url", MYSQL_URL)
         .option("dbtable", table_name)
         .option("user", MYSQL_USER)
         .option("password", MYSQL_PASSWORD)
         .load()
-    )
+    ).cache()
+
+    return df
 
 
-travels_df = read_mysql_table("travels").dropDuplicates().cache()
-violations_df = read_mysql_table("violations").dropDuplicates().cache()
+violations_df = read_from_mysql(VIOLATIONS)
+violations_df.show()
 
-# ** ----------------- Join the two tables -----------------
-joined_df = (
-    travels_df.join(violations_df, travels_df["ID"] == violations_df["Car_ID"], "inner")
-    .select(
-        violations_df["Car_ID"],
-        travels_df["Start_Gate"],
-        travels_df["End_Gate"],
-        violations_df["Start_Date"],
-        violations_df["End_Date"],
-    )
-    .orderBy(violations_df["Start_Date"])
+route_violations = (  # ** count the number of violations for each route
+    violations_df.groupBy("Start_Gate", "End_Gate")
+    .count()
+    .orderBy("count", ascending=False)
+    .cache()
 )
+route_violations.show()
 
-# ** ----------------- Count the number of violations for each route ( MYSQL ) -----------------
-route_violations = (
-    joined_df.groupBy("Start_Gate", "End_Gate")
+vehicle_violations = (  # ** count the number of violations for each vehicle type
+    violations_df.withColumn("Vehicle_Type", F.split(violations_df["Car_ID"], "_|-")[1])
+    .groupBy("Vehicle_Type")
     .count()
     .orderBy("count", ascending=False)
     .cache()
 )
 
-# ** ----------------- Read Kafka Stream -----------------
-violations_stream_df = (
-    spark.readStream.format("kafka")
-    .option("kafka.bootstrap.servers", KAFKA_BROKER)
-    .option("subscribe", VIOLATIONS_TOPIC)
-    .option("startingOffsets", "latest")
-    .load()
-)
+vehicle_violations.show()
 
-violations_schema = StructType(
+
+# ** ----------------- Read from KAFKA -----------------
+schema = StructType(
     [
         StructField("ID", StringType(), True),
         StructField("Start Gate", StringType(), True),
@@ -79,100 +71,75 @@ violations_schema = StructType(
 )
 
 violations_stream_df = (
-    violations_stream_df.selectExpr("CAST(value AS STRING)")
-    .select(from_json("value", violations_schema).alias("data"))
+    spark.readStream.format("kafka")
+    .option("kafka.bootstrap.servers", KAFKA_BROKER)
+    .option("subscribe", VIOLATIONS_TOPIC)
+    .option("startingOffsets", "latest")
+    .load()
+    .selectExpr("CAST(value AS STRING)")
+    .select(from_json("value", schema).alias("data"))
     .select("data.*")
 )
 
 # ** ----------------- Count the number of violations for each route  -----------------
-joined_df_stream = violations_stream_df.join(
-    route_violations,
-    (violations_stream_df["Start Gate"] == route_violations["Start_Gate"])
-    & (violations_stream_df["End Gate"] == route_violations["End_Gate"]),
-    "inner",
-).select(
-    violations_stream_df["Start Gate"],
-    violations_stream_df["End Gate"],
-    (route_violations["count"]).alias("Total Violations"),
-)
-
-# ** ----------------- Count the number of violations for each route  -----------------
-joined_df = joined_df.withColumn("Vehicle_Type", split(joined_df["Car_ID"], "_")[1])
-joined_df = joined_df.withColumn(
-    "Vehicle_Type", split(joined_df["Vehicle_Type"], "-")[0]
-)
-
-route_vehicle_violations = (
-    (
-        joined_df.groupBy("Start_Gate", "End_Gate", "Vehicle_Type")
-        .count()
-        .orderBy("count", ascending=False)
+joined_df_stream = (
+    violations_stream_df.join(
+        route_violations,
+        (violations_stream_df["Start Gate"] == route_violations["Start_Gate"])
+        & (violations_stream_df["End Gate"] == route_violations["End_Gate"]),
+        "left",
     )
-    .dropDuplicates(["Start_Gate", "End_Gate"])
-    .cache()
-)
-
-stream_joined_df = violations_stream_df.join(
-    route_vehicle_violations,
-    (violations_stream_df["Start Gate"] == route_vehicle_violations["Start_Gate"])
-    & (violations_stream_df["End Gate"] == route_vehicle_violations["End_Gate"]),
-    "inner",
-).select(
-    violations_stream_df["Start Gate"],
-    violations_stream_df["End Gate"],
-    route_vehicle_violations["Vehicle_Type"],
-    route_vehicle_violations["count"],
-)
-
-# ** ----------------- The First Query -----------------
-try:
-    query1 = (
-        joined_df_stream.writeStream.outputMode("update")
-        .format("console")
-        .option("truncate", "false")
-        .start()
+    .withColumn(
+        "count", F.when(col("ID").isNotNull(), col("count") + 1).otherwise(col("count"))
     )
+    .select("Start Gate", "End Gate", "count")
+)
 
-    query1.awaitTermination()
-except Exception as e:
-    LOGGER.error(f"Error in Query1: {e}")
-
-# ** ----------------- The Second Query -----------------
-total_violations = violations_df.count()  # Count the total number of violations
-
-try:
-    query2 = (
-        violations_stream_df.writeStream.outputMode("update")
-        .format("console")
-        .option("truncate", "false")
-        .foreachBatch(
-            lambda df, epoch_id: print(
-                f"Batch: {epoch_id}, Total Violations: {df.count() + total_violations}"
+# ** ----------------- First Query -----------------
+query1 = (
+    joined_df_stream.writeStream.outputMode("update")
+    .format("console")
+    .foreachBatch(
+        lambda df, epoch_id: df.foreach(
+            lambda row: print(
+                f"Epoch ID: {epoch_id},Start Gate: {row['Start Gate']}, End Gate: {row['End Gate']}, Count: {row['count']}"
             )
         )
-        .start()
     )
+    .option("truncate", "false")
+    .start()
+    .awaitTermination()
+)
 
-    query2.awaitTermination()
-except Exception as e:
-    LOGGER.error(f"Error in Query2: {e}")
+# ** ----------------- Count the number of violations for each vehicle type -----------------
+joined_df_stream2 = (
+    violations_stream_df.join(
+        vehicle_violations,
+        (
+            F.split(violations_stream_df["ID"], "_|-")[1]
+            == vehicle_violations["Vehicle_Type"]
+        ),
+        "left",
+    )
+    .withColumn(
+        "count", F.when(col("ID").isNotNull(), col("count") + 1).otherwise(col("count"))
+    )
+    .select("Start Gate", "End Gate", "Vehicle_Type", "count")
+)
 
-# ** ----------------- The Third Query -----------------
-try:
-    query3 = (
-        stream_joined_df.writeStream.outputMode("update")
-        .format("console")
-        .foreachBatch(
-            lambda df, epoch_id: df.foreach(
-                lambda row: print(
-                    f"Epoch ID: {epoch_id}, Route: {row['Start Gate']} to {row['End Gate']}, Vehicle Type: {row['Vehicle_Type']}, Violations Count: {row['count']}"
-                )
+
+# ** ----------------- Second Query -----------------
+query2 = (
+    joined_df_stream2.writeStream.outputMode("update")
+    .format("console")
+    .foreachBatch(
+        lambda df, epoch_id: df.foreach(
+            lambda row: print(
+                f"Epoch ID: {epoch_id}, Route: {row['Start Gate']} to {row['End Gate']}, Vehicle Type: {row['Vehicle_Type']}, Violations Count: {row['count']}"
             )
         )
-        .option("truncate", "false")
-        .start()
     )
-
-    query3.awaitTermination()
-except Exception as e:
-    LOGGER.error(f"Error in Query3: {e}")
+    .option("truncate", "false")
+    .start()
+    .awaitTermination()
+)

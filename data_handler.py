@@ -116,6 +116,7 @@ def process_travels_data(
                 "ID": travel_id_with_code,
                 "Start Date": start_date,
                 "Start Gate": start_gate,
+                "End Gate": end_gate,
                 "TTL (seconds)": ttl,
             }
             redis_connection.hset(f"{travel_id_with_code}", mapping=violation_data)

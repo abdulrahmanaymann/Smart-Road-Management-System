@@ -24,6 +24,8 @@ MYSQL_USER = "root"
 MYSQL_PASSWORD = ""
 MYSQL_DATABASE = "py_test_db"
 MYSQL_PORT = 3306
+TRAVELS = "travels"
+VIOLATIONS = "violations"
 
 CONN = DB_Connection(
     MYSQL_HOST,
@@ -33,9 +35,8 @@ CONN = DB_Connection(
     MYSQL_DATABASE,
 )
 
-# ----------------------------- SPARK && HADOOP CONSTANTS -----------------------------#
+# ----------------------------- SPARK CONSTANTS -----------------------------#
 STDERR_REDIRECT_COMMAND = "2>/dev/null" if os.name == "posix" else "2>nul"
-
 HADOOP_PATH = "C:\\hadoop"
 TEMP_PATH = "d:\\tmp"
 TEMP = "C:\\Users\\abdel\\AppData\\Local\\Temp\\spark-93aadcea-55e8-42ad-b06b-51056bf0ee11\\pyspark-35748fd3-1191-4155-a195-16188d767d27"
@@ -46,6 +47,10 @@ MYSQL_CONNECTOR_PATH = (
 KAFKA_CONNECTOR_PATH = (
     "C:\\Spark\\spark-3.5.0-bin-hadoop3\\jars\\spark-sql-kafka-0-10_2.12:3.5.0.jar"
 )
+
+SPARK_SQL_KAFKA = "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0"
+
+MYSQL_URL = f"jdbc:mysql://{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 
 # ----------------- ICONS PATHS ----------------- #
 ADD_TRAVEL_ICON = "ICONS\\add_travel.ico"

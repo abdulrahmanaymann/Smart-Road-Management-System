@@ -28,20 +28,20 @@ try:
                 end_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 cursor.execute(
-                    "INSERT INTO violations (Car_ID, Start_Date, End_Date) VALUES (%s, %s, %s)",
-                    (car_str, start_date, end_date),
+                    "SELECT Start_Gate, End_Gate FROM travels WHERE ID = %s", (car_str,)
+                )
+                travel_data = cursor.fetchone()
+                start_gate, end_gate = travel_data
+
+                cursor.execute(
+                    "INSERT INTO violations (Car_ID, Start_Gate, End_Gate, Start_Date, End_Date) VALUES (%s, %s, %s, %s, %s)",
+                    (car_str, start_gate, end_gate, start_date, end_date),
                 )
                 connection.commit()
 
                 print(
                     "DATA INSERTED SUCCESSFULLY :)",
                 )
-                # ---------------------------------------------------------------
-                cursor.execute(
-                    "SELECT Start_Gate, End_Gate FROM travels WHERE ID = %s", (car_str,)
-                )
-                travel_data = cursor.fetchone()
-                start_gate, end_gate = travel_data
 
                 kafka_message = {
                     "ID": car_str,
@@ -58,7 +58,7 @@ try:
                 )
                 p.flush()
                 print("Data sent to Kafka topic:", VIOLATIONS_TOPIC)
-                # ---------------------------------------------------------------
+
             except Exception as e:
                 print(
                     "Error:",
