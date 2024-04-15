@@ -96,7 +96,7 @@ def calculate_ttl(
 
 
 def process_travels_data(
-    id, start_gate, distance, end_gate, df_governorates, redis_connection
+    id, start_gate, distance, end_gate, df_governorates, redis_connection, start_date
 ):
     try:
         governorates_dict = insert_governorates_data(redis_connection, df_governorates)
@@ -111,7 +111,14 @@ def process_travels_data(
 
         if ttl is not None and end_gate_code is not None:
             travel_id_with_code = f"{id}-{end_gate_code}"
-            start_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            travel_id_with_code_late = f"(late){id}-{end_gate_code}"
+            travel_late = {
+                "ID": travel_id_with_code,
+                "Start Date": start_date,
+                "Start Gate": start_gate,
+                "End Gate": end_gate,
+                "TTL (seconds)": ttl * 2,
+            }
             violation_data = {
                 "ID": travel_id_with_code,
                 "Start Date": start_date,
@@ -119,9 +126,16 @@ def process_travels_data(
                 "End Gate": end_gate,
                 "TTL (seconds)": ttl,
             }
+            # set to redis for checking violations
             redis_connection.hset(f"{travel_id_with_code}", mapping=violation_data)
+            # set to redis for ckecking delay
+            redis_connection.hset(f"{travel_id_with_code_late}", mapping=travel_late)
+
             travel_key = f"{travel_id_with_code}"
+            travel_late_key = f"{travel_id_with_code_late}"
+
             redis_connection.expire(travel_key, int(ttl))
+            redis_connection.expire(travel_late_key, int(ttl * 2))
 
             LOGGER.info(
                 f"Travel ID: {travel_id_with_code}, Start Date: {start_date}, TTL (seconds): {ttl :.2f}"
@@ -137,7 +151,7 @@ def process_travels_data(
 
 
 def process_new_travel_data(
-    id, start_gate, end_gate, distance, producer, df_governorates
+    id, start_gate, end_gate, distance, producer, df_governorates, start_date, end_date
 ):
     try:
         governorates_dict = insert_governorates_data(
@@ -167,8 +181,16 @@ def process_new_travel_data(
         )
         if conn and cursor:
             try:
-                query = "INSERT INTO travels (ID, Start_Gate, End_Gate, Distance) VALUES (%s ,%s ,%s ,%s)"
-                value = (formatted_id, start_gate, end_gate, distance)
+
+                query = "INSERT INTO travels (ID, Start_Gate, End_Gate, Distance, Start_Travel_Date	, End_Travel_Date) VALUES (%s ,%s ,%s , %s, %s, %s)"
+                value = (
+                    formatted_id,
+                    start_gate,
+                    end_gate,
+                    distance,
+                    start_date,
+                    end_date,
+                )
                 cursor.execute(query, value)
                 conn.commit()
                 LOGGER.info("Data inserted into MySQL successfully.")
@@ -226,8 +248,9 @@ def Calaulate_Lowest_Distance(start_gate, dict):
     return min_key, end_gate, min_value
 
 
-def To_Nifi(r, df_governorates, id, start_Gate, end_Gate, distance):
+def To_Nifi(r, df_governorates, id, start_Gate, end_Gate, distance, start_date):
     keys = r.keys(f"{id}-*")
+    keys_late = r.keys(f"(late){id}-*")
 
     if keys:
         for key in keys:
@@ -241,15 +264,35 @@ def To_Nifi(r, df_governorates, id, start_Gate, end_Gate, distance):
             else:
                 print(f"{decoded_data}")
                 r.delete(key)
+                for late in keys_late:
+                    r.delete(late)
                 process_travels_data(
-                    id, start_Gate, distance, end_Gate, df_governorates, r
+                    id, start_Gate, distance, end_Gate, df_governorates, r, start_date
                 )
                 print(
                     f"Violation Detection!!!! \nthe previous key {key.decode('utf-8')} is DELETED FROM REDIS",
                 )
 
     else:
-        process_travels_data(id, start_Gate, distance, end_Gate, df_governorates, r)
-        print(
-            f"THERE IS NO such DATA in REDIS, BUT DATA SAVED TO REDIS ",
-        )
+        if keys_late:
+            for keys in keys_late:
+                full_key_late = r.hgetall(keys)
+                decoded_key_late = {
+                    key.decode(): value.decode() for key, value in full_key_late.items()
+                }
+                print(f"(late)-{decoded_key_late}")
+                r.delete(keys)
+                process_travels_data(
+                    id, start_Gate, distance, end_Gate, df_governorates, r, start_date
+                )
+                print(
+                    f"Delay Detection!!!! \nthe previous key {keys.decode('utf-8').split(')')[1]} is DELETED FROM REDIS",
+                )
+
+        else:
+            process_travels_data(
+                id, start_Gate, distance, end_Gate, df_governorates, r, start_date
+            )
+            print(
+                f"THERE IS NO such DATA in REDIS, BUT DATA SAVED TO REDIS ",
+            )

@@ -8,9 +8,14 @@ from excel_reader import read_excel_sheets
 import PySimpleGUI as sg
 from kafka_consumer import kafka_consumer
 
+
+r = get_redis_connection()
+p = get_kafka_producer(KAFKA_BROKER)
+
 df_governorates, df_vehicles, df_travels, df_all_government = read_excel_sheets(
     EXCEL_FILE
 )
+governorates_dict = insert_governorates_data(r, df_governorates)
 
 producer = KafkaProducer(bootstrap_servers="localhost:9092")
 
@@ -26,9 +31,6 @@ def start_kafka_consumer():
 def add_travel_record_GUI(df_governorates):
     df_all_government.set_index("Start_gate\End_gate", inplace=True)
     df_dict = df_all_government.to_dict(orient="index")
-
-    r = get_redis_connection()
-    p = get_kafka_producer(KAFKA_BROKER)
 
     start_kafka_consumer()
 
@@ -75,6 +77,16 @@ def add_travel_record_GUI(df_governorates):
         elif event == "Add Record":
             car_id = values["ID"].strip()
             start_gate = values["Start Gate"].strip()
+            start_date = datetime.now()
+            car_type = car_id.split("_")[1]
+            min_key, end_gate, min_value = Calaulate_Lowest_Distance(
+                start_gate, df_dict
+            )
+            ttl, _ = calculate_ttl(min_value, car_type, end_gate, governorates_dict, r)
+            actual_end_date = start_date + timedelta(seconds=ttl)
+
+            s_d = start_date.strftime("%Y-%m-%d %H:%M:%S")
+            e_d = actual_end_date.strftime("%Y-%m-%d %H:%M:%S")
 
             if not car_id:
                 sg.popup_error("Car ID cannot be empty.")
@@ -85,15 +97,19 @@ def add_travel_record_GUI(df_governorates):
                 continue
 
             try:
-                min_key, end_gate, min_value = Calaulate_Lowest_Distance(
-                    start_gate, df_dict
-                )
 
                 process_new_travel_data(
-                    car_id, start_gate, min_key, min_value, p, df_governorates
+                    car_id,
+                    start_gate,
+                    end_gate,
+                    min_value,
+                    p,
+                    df_governorates,
+                    s_d,
+                    e_d,
                 )
 
-                mes = f"id:{car_id},s_g:{start_gate},e_g:{end_gate},D:{min_value}"
+                mes = f"id:{car_id},s_g:{start_gate},e_g:{end_gate},D:{min_value},s_d: {s_d}"
 
                 producer.send(topic_name, mes.encode("utf-8"))
                 producer.flush()

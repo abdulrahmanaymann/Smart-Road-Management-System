@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Information</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- Nav tabs -->
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" id="travels-tab" data-toggle="tab" href="#travels" role="tab" aria-controls="travels" aria-selected="true">Normal Travel Information</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="violations-tab" data-toggle="tab" href="#violations" role="tab" aria-controls="violations" aria-selected="false">Violations</a>
+    </li>
+</ul>
+
+<!-- Tab panes -->
+<div class="tab-content">
+    <!-- Normal Travel Information Tab -->
+    <div class="tab-pane fade show active" id="travels" role="tabpanel" aria-labelledby="travels-tab">
+        <h2>Travel Information</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Start Gate</th>
+                    <th scope="col">End Gate</th>
+                    <th scope="col">Distance</th>
+                    <th scope="col">Start Travel Date</th>
+                    <th scope="col">End Travel Date</th>
+                    <th scope="col">Vehicle Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for travels in travel %}
+
+                <tr>
+                    <td>{{ travels.Start_Gate }}</td>
+                    <td>{{ travels.End_Gate }}</td>
+                    <td>{{ travels.Distance }}</td>
+                    <td>{{ travels.Start_Travel_Date }}</td>
+                    <td>{{ travels.End_Travel_Date }}</td>
+                    <td>{{ travels.Vehicle_Type }}</td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+    <!-- Violations Tab -->
+    <div class="tab-pane fade" id="violations" role="tabpanel" aria-labelledby="violations-tab">
+        <h2>Violations</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Car ID</th>
+                    <th scope="col">Start Gate</th>
+                    <th scope="col">End Gate</th>
+                    <th scope="col">Start Date</th>
+                    <th scope="col">Arrival End Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Add rows for each violation -->
+                {% for violation in violations %}
+                <tr>
+                    <td>{{ violation.Car_ID }}</td>
+                    <td>{{ violation.Start_Gate }}</td>
+                    <td>{{ violation.End_Gate }}</td>
+                    <td>{{ violation.Start_Date }}</td>
+                    <td>{{ violation.Arrival_End_Date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+</body>
+</html>

@@ -1,14 +1,13 @@
-import findspark
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType
 from pyspark.sql import functions as F
-from pyspark.sql.functions import from_json, col, sum
+from pyspark.sql.functions import (
+    from_json,
+    col,
+    current_timestamp,
+)
 from Config.config import *
 from Config.Logger import *
-
-# ** ----------------- Init and find Spark -----------------
-findspark.init()
-findspark.find()
 
 # ** ----------------- Create SparkSession -----------------
 spark = (
@@ -27,7 +26,7 @@ spark = (
 def read_from_mysql(table_name):
     df = (
         spark.read.format("jdbc")
-        .option("url", MYSQL_URL)
+        .option("url", MYSQL_JDBC_URL)
         .option("dbtable", table_name)
         .option("user", MYSQL_USER)
         .option("password", MYSQL_PASSWORD)
@@ -80,6 +79,7 @@ violations_stream_df = (
     .select(from_json("value", schema).alias("data"))
     .select("data.*")
 )
+stream_df = violations_stream_df.withColumn("timestamp", current_timestamp())
 
 # ** ----------------- Count the number of violations for each route  -----------------
 joined_df_stream = (
@@ -89,57 +89,56 @@ joined_df_stream = (
         & (violations_stream_df["End Gate"] == route_violations["End_Gate"]),
         "left",
     )
-    .withColumn(
-        "count", F.when(col("ID").isNotNull(), col("count") + 1).otherwise(col("count"))
-    )
+    # .withColumn("count", F.when(col("count").isNull(), lit(1)).otherwise(col("count") + 1))
+    .groupBy("Start Gate", "End Gate")
+    .count()
     .select("Start Gate", "End Gate", "count")
+    .agg(F.max("count").alias("total_count"))
+    .orderBy(col("total_count").desc())
 )
+
 
 # ** ----------------- First Query -----------------
 query1 = (
-    joined_df_stream.writeStream.outputMode("update")
+    joined_df_stream.writeStream.outputMode("complete")
     .format("console")
-    .foreachBatch(
-        lambda df, epoch_id: df.foreach(
-            lambda row: print(
-                f"Epoch ID: {epoch_id},Start Gate: {row['Start Gate']}, End Gate: {row['End Gate']}, Count: {row['count']}"
-            )
-        )
-    )
     .option("truncate", "false")
     .start()
     .awaitTermination()
 )
 
 # ** ----------------- Count the number of violations for each vehicle type -----------------
-joined_df_stream2 = (
-    violations_stream_df.join(
-        vehicle_violations,
-        (
-            F.split(violations_stream_df["ID"], "_|-")[1]
-            == vehicle_violations["Vehicle_Type"]
-        ),
-        "left",
-    )
-    .withColumn(
-        "count", F.when(col("ID").isNotNull(), col("count") + 1).otherwise(col("count"))
-    )
-    .select("Start Gate", "End Gate", "Vehicle_Type", "count")
-)
+# joined_df_stream2 = (
+#     violations_stream_df.join(
+#         vehicle_violations,
+#         (
+#             split(violations_stream_df["ID"], "_|-")[1]
+#             == vehicle_violations["Vehicle_Type"]
+#         ),
+#         "left",
+#     )
+#     .withColumn(
+#         "count",
+#         when(col("ID").isNotNull(), coalesce(col("count") + 1, lit(1))).otherwise(
+#             col("count")
+#         ),
+#     )
+#     .select("Start Gate", "End Gate", "Vehicle_Type", "count")
+# )
 
 
-# ** ----------------- Second Query -----------------
-query2 = (
-    joined_df_stream2.writeStream.outputMode("update")
-    .format("console")
-    .foreachBatch(
-        lambda df, epoch_id: df.foreach(
-            lambda row: print(
-                f"Epoch ID: {epoch_id}, Route: {row['Start Gate']} to {row['End Gate']}, Vehicle Type: {row['Vehicle_Type']}, Violations Count: {row['count']}"
-            )
-        )
-    )
-    .option("truncate", "false")
-    .start()
-    .awaitTermination()
-)
+# # ** ----------------- Second Query -----------------
+# query2 = (
+#     joined_df_stream2.writeStream.outputMode("update")
+#     .format("console")
+#     .foreachBatch(
+#         lambda df, epoch_id: df.foreach(
+#             lambda row: print(
+#                 f"Epoch ID: {epoch_id}, Route: {row['Start Gate']} to {row['End Gate']}, Vehicle Type: {row['Vehicle_Type']}, Violations Count: {row['count']}"
+#             )
+#         )
+#     )
+#     .option("truncate", "false")
+#     .start()
+#     .awaitTermination()
+# )

@@ -26,6 +26,7 @@ MYSQL_DATABASE = "py_test_db"
 MYSQL_PORT = 3306
 TRAVELS = "travels"
 VIOLATIONS = "violations"
+DELAYS = "delays"
 
 CONN = DB_Connection(
     MYSQL_HOST,
@@ -34,6 +35,8 @@ CONN = DB_Connection(
     MYSQL_PASSWORD,
     MYSQL_DATABASE,
 )
+
+OUTPUT_PATH = "D:\\GP\\graduation project\\GP\\Data"
 
 # ----------------------------- SPARK CONSTANTS -----------------------------#
 STDERR_REDIRECT_COMMAND = "2>/dev/null" if os.name == "posix" else "2>nul"
@@ -50,7 +53,7 @@ KAFKA_CONNECTOR_PATH = (
 
 SPARK_SQL_KAFKA = "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0"
 
-MYSQL_URL = f"jdbc:mysql://{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
+MYSQL_JDBC_URL = f"jdbc:mysql://{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 
 # ----------------- ICONS PATHS ----------------- #
 ADD_TRAVEL_ICON = "ICONS\\add_travel.ico"

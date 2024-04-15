@@ -30,4 +30,5 @@ The topics list:
 to delete topic
 .\bin\windows\kafka-topics.bat --delete --topic your_topic_name --bootstrap-server localhost:9092
 
-
+run main.py:
+python -u 'd:\GP\graduation project\GP\main.py'

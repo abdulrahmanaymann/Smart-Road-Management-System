@@ -1,7 +1,6 @@
 from GUI import *
 from Config.config import *
 from data_handler import *
-from kafka_consumer import *
 from Config.Logger import LOGGER
 
 
