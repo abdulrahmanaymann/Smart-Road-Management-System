@@ -1,13 +1,27 @@
 from datetime import datetime
+import hashlib
+import secrets
 import sys
+import threading
 
-sys.path.append("D:\\graduation project\\GP")
+sys.path.append("D:\\GP\\graduation project\\GP")
 
-from flask import Flask, redirect, request, render_template, url_for
+from flask import (
+    Flask,
+    jsonify,
+    redirect,
+    request,
+    render_template,
+    send_from_directory,
+    session,
+    url_for,
+)
 from kafka import KafkaProducer
 from data_handler import *
 from Config.config import *
 from excel_reader import read_excel_sheets
+from Spark_stream import run_spark_job
+from Flask_Functions import *
 
 r = get_redis_connection()
 p = get_kafka_producer(KAFKA_BROKER)
@@ -31,7 +45,192 @@ df_dict = df_all_government.to_dict(orient="index")
 app = Flask(__name__)
 
 
-@app.route("/", methods=["GET", "POST"])
+def is_json_file(file_name):
+    return file_name.endswith(".json")
+
+
+@app.route("/json_data")
+def json_data():
+    delay_dir = "output/delay"
+    travel_dir = "output/travel"
+    joined_dir = "output/joined"
+
+    delay_data = []
+    travel_data = []
+    joined_data = []
+
+    if os.path.exists(delay_dir):
+        delay_files = [f for f in os.listdir(delay_dir) if is_json_file(f)]
+        for file_name in delay_files:
+            file_path = os.path.join(delay_dir, file_name)
+            try:
+                with open(file_path, "r", encoding="utf-8") as delay_file:
+                    delay_data.extend(
+                        [json.loads(line) for line in delay_file.readlines()]
+                    )
+            except Exception as e:
+                print(f"Error reading file {file_path}: {str(e)}")
+
+    if os.path.exists(travel_dir):
+        travel_files = [f for f in os.listdir(travel_dir) if is_json_file(f)]
+        for file_name in travel_files:
+            file_path = os.path.join(travel_dir, file_name)
+            try:
+                with open(file_path, "r", encoding="utf-8") as travel_file:
+                    travel_data.extend(
+                        [json.loads(line) for line in travel_file.readlines()]
+                    )
+            except Exception as e:
+                print(f"Error reading file {file_path}: {str(e)}")
+
+    if os.path.exists(joined_dir):
+        joined_files = [f for f in os.listdir(joined_dir) if is_json_file(f)]
+        for file_name in joined_files:
+            file_path = os.path.join(joined_dir, file_name)
+            try:
+                with open(file_path, "r", encoding="utf-8") as joined_file:
+                    joined_data.extend(
+                        [json.loads(line) for line in joined_file.readlines()]
+                    )
+            except Exception as e:
+                print(f"Error reading file {file_path}: {str(e)}")
+
+    return jsonify(
+        {
+            "delay_records": delay_data,
+            "travel_records": travel_data,
+            "joined_records": joined_data,
+        }
+    )
+
+
+@app.route("/test")
+def test():
+    return render_template("test.html")
+
+
+@app.route("/streaming")
+def streaming_data():
+    data_dir = "output/stream"  # violations json
+    streaming_data = []
+
+    if os.path.exists(data_dir):
+        data_files = [f for f in os.listdir(data_dir) if is_json_file(f)]
+        for file_name in data_files:
+            file_path = os.path.join(data_dir, file_name)
+            try:
+                with open(file_path, "r", encoding="utf-8") as data_file:
+                    streaming_data.extend(
+                        [json.loads(line) for line in data_file.readlines()]
+                    )
+            except Exception as e:
+                print(f"Error reading file {file_path}: {str(e)}")
+
+    return jsonify({"streaming_data": streaming_data})
+
+
+@app.route("/travels")
+def _data():
+    data_dir = "output/stream2"  # travels json
+    streaming_data = []
+
+    if os.path.exists(data_dir):
+        data_files = [f for f in os.listdir(data_dir) if is_json_file(f)]
+        for file_name in data_files:
+            file_path = os.path.join(data_dir, file_name)
+            try:
+                with open(file_path, "r", encoding="utf-8") as data_file:
+                    streaming_data.extend(
+                        [json.loads(line) for line in data_file.readlines()]
+                    )
+            except Exception as e:
+                print(f"Error reading file {file_path}: {str(e)}")
+
+    return jsonify({"travels_data": streaming_data})
+
+
+@app.route("/delays")
+def delays():
+    data_dir = "output/stream3"  # delays json
+    streaming_data = []
+
+    if os.path.exists(data_dir):
+        data_files = [f for f in os.listdir(data_dir) if is_json_file(f)]
+        for file_name in data_files:
+            file_path = os.path.join(data_dir, file_name)
+            try:
+                with open(file_path, "r", encoding="utf-8") as data_file:
+                    streaming_data.extend(
+                        [json.loads(line) for line in data_file.readlines()]
+                    )
+            except Exception as e:
+                print(f"Error reading file {file_path}: {str(e)}")
+
+    return jsonify({"delays_data": streaming_data})
+
+
+@app.route("/car_types")
+def car_types():
+    data_dir = "output/stream"  # types json
+    car_types = {}
+
+    if os.path.exists(data_dir):
+        data_files = [f for f in os.listdir(data_dir) if is_json_file(f)]
+        for file_name in data_files:
+            file_path = os.path.join(data_dir, file_name)
+            try:
+                with open(file_path, "r", encoding="utf-8") as data_file:
+                    streaming_data = [
+                        json.loads(line) for line in data_file.readlines()
+                    ]
+                    for item in streaming_data:
+                        id_parts = item["ID"].split("_")
+                        car_type = id_parts[1].split("-")[0]
+                        car_types[car_type] = car_types.get(car_type, 0) + 1
+            except Exception as e:
+                print(f"Error reading file {file_path}: {str(e)}")
+
+    return jsonify({"car_types": car_types})
+
+
+@app.route("/types_delay")
+def car_types_delays():
+    data_dir = "output/stream3"  # types json delay
+    car_types = {}
+
+    if os.path.exists(data_dir):
+        data_files = [f for f in os.listdir(data_dir) if is_json_file(f)]
+        for file_name in data_files:
+            file_path = os.path.join(data_dir, file_name)
+            try:
+                with open(file_path, "r", encoding="utf-8") as data_file:
+                    streaming_data = [
+                        json.loads(line) for line in data_file.readlines()
+                    ]
+                    for item in streaming_data:
+                        car_id = item.get("Car_ID")
+                        if car_id:
+                            car_type = car_id.split("_")[1]
+                            car_types[car_type] = car_types.get(car_type, 0) + 1
+            except Exception as e:
+                print(f"Error reading file {file_path}: {str(e)}")
+
+    return jsonify({"car_types": car_types})
+
+
+@app.route("/stream")
+def streaming_page():
+    return render_template("streaming.html")
+
+
+app.secret_key = secrets.token_hex(16)
+
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+@app.route("/Enroll", methods=["GET", "POST"])
 def APP():
     if request.method == "POST":
         try:
@@ -72,118 +271,116 @@ def APP():
         except Exception as e:
             return f"Erroooooooooooor!\n{e}"
 
-        if car_id == "":
-            return " there is not data"
-        elif start_gate == "":
-            return " there is not data"
-
         else:
             return render_template("index.html")
     return render_template("index.html")
 
+@app.route("/<name>")
+def driver_info(name):
+    travel_info, violations = get_driver_info(name)
+    email, car_ids = get_driver_profile(name)
 
-def extract_vehicle_type(id):
-    start_index = id.find("_") + 1
-    end_index = id.find("-")
-    if start_index != -1 and end_index != -1:
-        return id[start_index:end_index]
+    if travel_info:
+        return render_template(
+            "vehicle_info.html",
+            driver_profile={"name": name, "email": email, "car_ids": car_ids},
+            travel=travel_info,
+            violation=violations,
+        )
     else:
-        return None
+        return "Driver information not found."
 
-
-def get_travel_info(id):
-
-    if conn and cursor:
-        try:
-            query = "SELECT ID FROM travels WHERE ID = %s"
-            cursor.execute(query, (f"{id}",))
-            travel_id = cursor.fetchall()
-
-            if travel_id:
-                for ids in travel_id:
-                    ex_id = ids[0].split("_")[0]
-
-                    query = "SELECT Start_Gate, End_Gate, Distance, Start_Travel_Date, End_Travel_Date FROM travels WHERE ID = %s"
-                    cursor.execute(query, (ids[0],))
-                    travel_data = cursor.fetchall()
-                    print("Travel data:", travel_data)
-
-                    if travel_data:
-                        travels = []
-                        for travel in travel_data:
-                            vehicle_type = extract_vehicle_type(ids[0])
-                            travels.append(
-                                {
-                                    "Start_Gate": travel[0],
-                                    "End_Gate": travel[1],
-                                    "Distance": travel[2],
-                                    "Start_Travel_Date": travel[3],
-                                    "End_Travel_Date": travel[4],
-                                    "Vehicle_Type": vehicle_type,
-                                }
-                            )
-
-                        violation_query = "SELECT Car_ID, Start_Gate, End_Gate, Start_Date, Arrival_End_Date FROM violations WHERE Car_ID = %s"
-                        cursor.execute(violation_query, (f"{ex_id}%",))
-                        violations_data = cursor.fetchall()
-
-                        violations = []
-                        for violation_data in violations_data:
-                            violations.append(
-                                {
-                                    "Car_ID": violation_data[0],
-                                    "Start_Gate": violation_data[1],
-                                    "End_Gate": violation_data[2],
-                                    "Start_Date": violation_data[3],
-                                    "Arrival_End_Date": violation_data[4],
-                                }
-                            )
-
-                        return travels
-            else:
-                return None, None
-
-        except mysql.connector.Error as e:
-            print(f"Error fetching travel data: {e}")
-        finally:
-            cursor.close()
-            conn.close()
-
-
+@app.route("/", methods=["GET", "POST"])
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        id = request.form["id"]
-        if conn and cursor:
-            try:
-                query = "SELECT * FROM travels WHERE ID = %s"
-                cursor.execute(query, (id,))
-                travel_data = cursor.fetchone()
-                if travel_data:
-                    travel_info = get_travel_info(id)
-                    if travel_info:
-                        return redirect(url_for("travel_info", id=id))
-                    else:
-                        return "Error fetching travel information."
-                else:
-                    return "Invalid ID. Please try again."
-            except mysql.connector.Error as e:
-                print(f"Error fetching data from travels table: {e}")
-            finally:
-                cursor.close()
-                conn.close()
+        email = request.form["email"]
+        name = request.form["name"]
+        password = hash_password(request.form["password"])
+        types = check_type(email)
+        if types == "admin":
+            cursor.execute(
+                "SELECT * FROM admins WHERE email = %s AND password = %s",
+                (email, password),
+            )
+            user = cursor.fetchone()
+            if user:
+                session["user_id"] = user[0]
+                return redirect(url_for("APP"))
+            else:
+                return "sorry! user not exists"
+        elif types == "driver":
+            cursor.execute(
+                "SELECT * FROM drivers WHERE email = %s AND password = %s",
+                (email, password),
+            )
+            user = cursor.fetchone()
+            if user:
+                session["user_id"] = user[0]
+                return redirect(url_for("driver_info", name=name))
+            else:
+                return "sorry! user not exists"
+        else:
+            return "Invalid email or password. Please try again."
+
     return render_template("login.html")
 
 
-@app.route("/travel_info/<id>")
-def travel_info(id):
+@app.route("/logout")
+def logout():
+    session.pop("user_id", None)
+    return redirect(url_for("login"))
 
-    travel_info = get_travel_info(id)
-    if travel_info:
-        return render_template("vehicle_info.html", travel=travel_info)
-    else:
-        return "Travel information not found."
+
+@app.route("/update", methods=["POST"])
+def button():
+    if request.method == "POST":
+        start_date = request.form["button"]
+        value = "paid"
+        query = "UPDATE violations SET payment_status = %s WHERE Start_Date = %s"
+        cursor.execute(query, (value, start_date))
+        conn.commit()
+        return jsonify({"success": True})
+    return jsonify({"success": False, "message": "Invalid request method"})
+
+
+@app.route("/register/driver", methods=["GET", "POST"])
+def register_driver():
+    if request.method == "POST":
+        email = request.form["email"]
+        name = request.form["name"]
+        password = hash_password(request.form["password"])
+
+        cursor.execute(
+            "INSERT INTO drivers (email, name, password) VALUES (%s, %s, %s)",
+            (email, name, password),
+        )
+        conn.commit()
+        return redirect(url_for("login"))  
+    return render_template("register_driver.html")
+
+
+@app.route("/register/admin", methods=["GET", "POST"])
+def register_admin():
+    if request.method == "POST":
+        email = request.form["email"]
+        name = request.form["name"]
+        password = hash_password(request.form["password"])
+        
+        cursor.execute(
+            "INSERT INTO admins (email, name, password) VALUES (%s, %s, %s)",
+            (email, name, password),
+        )
+        conn.commit()
+        return redirect(url_for("login"))  
+    return render_template("register_admin.html")
+
+
+
 
 
 if __name__ == "__main__":
+    """     spark_thread = threading.Thread(target=run_spark_job)
+    spark_thread.start() """
+
     app.run(debug=True)

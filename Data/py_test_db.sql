@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 26, 2024 at 08:04 PM
+-- Generation Time: Apr 23, 2024 at 04:40 PM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -24,44 +24,112 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `admins`
+--
+
+CREATE TABLE `admins` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `admins`
+--
+
+INSERT INTO `admins` (`id`, `name`, `email`, `password`) VALUES
+(1, 'admin', 'admin@admin.com', '98d74e3d7ab10fbc19ba04dbb589b357748a3ac55f86fccc64a89340c928014f'),
+(2, 'admin1', 'admin1@admin.com', '98d74e3d7ab10fbc19ba04dbb589b357748a3ac55f86fccc64a89340c928014f'),
+(3, 'admin2', 'admin2@admin.com', '98d74e3d7ab10fbc19ba04dbb589b357748a3ac55f86fccc64a89340c928014f');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `delays`
+--
+
+CREATE TABLE `delays` (
+  `Car_ID` longtext NOT NULL,
+  `Start_Gate` varchar(255) NOT NULL,
+  `End_Gate` varchar(255) NOT NULL,
+  `Start_Date` longtext NOT NULL,
+  `Arrival_End_Date` longtext NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `drivers`
+--
+
+CREATE TABLE `drivers` (
+  `ID` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `drivers`
+--
+
+INSERT INTO `drivers` (`ID`, `name`, `email`, `password`) VALUES
+(1, 'Ezio Auditore', 'Ezio_Auditore@gmail.com', '98d74e3d7ab10fbc19ba04dbb589b357748a3ac55f86fccc64a89340c928014f'),
+(2, 'Ali Ahmed', 'Ali_Ahmed@gmail.com', '98d74e3d7ab10fbc19ba04dbb589b357748a3ac55f86fccc64a89340c928014f'),
+(3, 'Mohamed Abdo', 'Mohamed_Abdo@gmail.com', '98d74e3d7ab10fbc19ba04dbb589b357748a3ac55f86fccc64a89340c928014f'),
+(4, 'Nour Hani', 'Nour_Hani@gmail.com', '98d74e3d7ab10fbc19ba04dbb589b357748a3ac55f86fccc64a89340c928014f');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `travels`
 --
 
 CREATE TABLE `travels` (
-  `ID` varchar(255) DEFAULT NULL,
+  `Travel_id` varchar(255) NOT NULL,
+  `Vehicle_id` int(11) NOT NULL,
   `Start_Gate` varchar(255) DEFAULT NULL,
   `End_Gate` varchar(255) DEFAULT NULL,
-  `Distance` int(10) DEFAULT NULL
+  `Distance` int(10) DEFAULT NULL,
+  `Start_Travel_Date` longtext NOT NULL,
+  `End_Travel_Date` longtext NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `travels`
 --
 
-INSERT INTO `travels` (`ID`, `Start_Gate`, `End_Gate`, `Distance`) VALUES
-('1110_Car', 'Cairo', 'Giza', 7),
-('1110_Car', 'Qena', 'Luxor', 82),
-('1110_Car', 'Qena', 'Luxor', 82),
-('1110_Car', 'Luxor', 'Aswan', 194),
-('1110_Car', 'Cairo', 'Giza', 7),
-('1110_Car', 'Giza', 'Qalyubia', 32),
-('1110_Car', 'Cairo', 'Giza', 7),
-('1110_Taxi', 'Cairo', 'Giza', 7),
-('1110_Taxi', 'Giza', 'Qalyubia', 32),
-('1110_Taxi', 'Qalyubia', 'Monufia', 85),
-('1110_Taxi', 'Qalyubia', 'Monufia', 85),
-('1110_Taxi', 'Monufia', 'Gharbia', 44),
-('1110_Taxi', 'Gharbia', 'Kafr El Sheikh', 52),
-('1110_Taxi', 'Kafr El Sheikh', 'Damietta', 129),
-('1110_Taxi', 'Damietta', 'Port Said', 94),
-('1110_Taxi', 'Port Said', 'Minya', 444),
-('1110_Taxi', 'Minya', 'Assiut', 187),
-('1110_Taxi', 'Assiut', 'Sohag', 191),
-('1110_Taxi', 'Sohag', 'Qena', 92),
-('1110_Taxi', 'Giza', 'Qalyubia', 32),
-('1110_Taxi', 'Luxor', 'Aswan', 194),
-('1110_Taxi', 'Giza', 'Qalyubia', 32),
-('1110_Taxi', 'Qena', 'Luxor', 82);
+INSERT INTO `travels` (`Travel_id`, `Vehicle_id`, `Start_Gate`, `End_Gate`, `Distance`, `Start_Travel_Date`, `End_Travel_Date`) VALUES
+('3_Car', 1, 'Giza', 'Cairo', 7, '2024-03-11 15:34:01', '2024-03-11 15:34:01'),
+('4_Taxi', 2, 'Giza', 'Cairo', 7, '2024-03-11 15:34:01', '2024-03-11 15:34:01');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `vehicles`
+--
+
+CREATE TABLE `vehicles` (
+  `id` int(11) NOT NULL,
+  `driver_id` int(11) NOT NULL,
+  `Number_Type` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `vehicles`
+--
+
+INSERT INTO `vehicles` (`id`, `driver_id`, `Number_Type`) VALUES
+(1, 1, '3_Car'),
+(2, 1, '4_Taxi'),
+(3, 1, '1_Motorcycle'),
+(4, 2, '4112_Car'),
+(5, 2, '1423_Bus'),
+(6, 3, '1110_Taxi'),
+(7, 3, '4121_Car'),
+(8, 4, '9812_Motorcycle'),
+(9, 4, '6252_Car');
 
 -- --------------------------------------------------------
 
@@ -74,32 +142,83 @@ CREATE TABLE `violations` (
   `Start_Gate` varchar(255) DEFAULT NULL,
   `End_Gate` varchar(255) DEFAULT NULL,
   `Start_Date` longtext DEFAULT NULL,
-  `End_Date` longtext DEFAULT NULL
+  `Arrival_End_Date` longtext DEFAULT NULL,
+  `payment_status` enum('paid','unpaid') DEFAULT 'unpaid'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `violations`
 --
 
-INSERT INTO `violations` (`Car_ID`, `Start_Gate`, `End_Gate`, `Start_Date`, `End_Date`) VALUES
-('1110_Car', 'Cairo', 'Giza', '2024-02-26 00:25:36', '2024-02-26 01:58:45'),
-('1110_Car', 'Qena', 'Luxor', '2024-02-26 01:59:47', '2024-02-26 02:00:10'),
-('1110_Car', 'Luxor', 'Aswan', '2024-02-26 02:00:08', '2024-02-26 02:01:05'),
-('1110_Car', 'Cairo', 'Giza', '2024-02-26 02:01:02', '2024-02-26 02:01:14'),
-('1110_Car', 'Giza', 'Qalyubia', '2024-02-26 02:01:12', '2024-02-26 02:01:23'),
-('1110_Taxi', 'Cairo', 'Giza', '2024-02-26 04:59:32', '2024-02-26 04:59:48'),
-('1110_Taxi', 'Giza', 'Qalyubia', '2024-02-26 04:59:42', '2024-02-26 05:00:33'),
-('1110_Taxi', 'Qalyubia', 'Monufia', '2024-02-26 16:50:04', '2024-02-26 16:50:23'),
-('1110_Taxi', 'Monufia', 'Sharqia', '2024-02-26 16:50:18', '2024-02-26 16:50:37'),
-('1110_Taxi', 'Gharbia', 'Beni Suef', '2024-02-26 16:50:32', '2024-02-26 16:50:49'),
-('1110_Taxi', 'Kafr El Sheikh', 'Damietta', '2024-02-26 16:50:46', '2024-02-26 16:51:24'),
-('1110_Taxi', 'Damietta', 'Alexandria', '2024-02-26 16:50:57', '2024-02-26 16:51:30'),
-('1110_Taxi', 'Port Said', 'Minya', '2024-02-26 16:51:25', '2024-02-26 16:51:34'),
-('1110_Taxi', 'Minya', 'Assiut', '2024-02-26 16:51:30', '2024-02-26 16:51:37'),
-('1110_Taxi', 'Sohag', 'Qena', '2024-02-26 16:51:37', '2024-02-26 16:52:39'),
-('1110_Taxi', 'Giza', 'Qalyubia', '2024-02-26 16:52:37', '2024-02-26 16:52:59'),
-('1110_Taxi', 'Luxor', 'Aswan', '2024-02-26 16:52:56', '2024-02-26 16:53:14'),
-('1110_Taxi', 'Giza', 'Qalyubia', '2024-02-26 16:53:11', '2024-02-26 16:53:26');
+INSERT INTO `violations` (`Car_ID`, `Start_Gate`, `End_Gate`, `Start_Date`, `Arrival_End_Date`, `payment_status`) VALUES
+('3_Car', 'Giza', 'Qalyubia', '2024-03-11 15:34:01', '2024-03-11 15:35:53', 'unpaid');
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `admins`
+--
+ALTER TABLE `admins`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `drivers`
+--
+ALTER TABLE `drivers`
+  ADD PRIMARY KEY (`ID`);
+
+--
+-- Indexes for table `travels`
+--
+ALTER TABLE `travels`
+  ADD KEY `travels_vehicles` (`Vehicle_id`);
+
+--
+-- Indexes for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `driver_vehicle` (`driver_id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `admins`
+--
+ALTER TABLE `admins`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `drivers`
+--
+ALTER TABLE `drivers`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `travels`
+--
+ALTER TABLE `travels`
+  ADD CONSTRAINT `travels_vehicles` FOREIGN KEY (`Vehicle_id`) REFERENCES `vehicles` (`id`);
+
+--
+-- Constraints for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  ADD CONSTRAINT `driver_vehicle` FOREIGN KEY (`driver_id`) REFERENCES `drivers` (`ID`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

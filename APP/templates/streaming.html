@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Streaming Data Dashboard</title>
+    <!-- External Stylesheets -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/Chart.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <!-- Internal Styles -->
+    <style>
+      /* General Styles */
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f9f9f9;
+        margin: 0;
+        padding: 0;
+        color: #333;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1,
+      h2 {
+        color: #007bff;
+        text-align: center;
+        margin: 20px 0;
+      }
+      /* Chart Styles */
+      .chart-container {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 40px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      canvas {
+        margin-bottom: 20px;
+        max-width: 100%;
+        height: auto;
+      }
+      .refresh-button,
+      .save-button {
+        position: absolute;
+        top: 10px;
+        padding: 10px;
+        font-size: 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      .refresh-button:hover,
+      .save-button:hover {
+        background-color: #0056b3;
+      }
+      .refresh-button:focus,
+      .save-button:focus {
+        outline: none;
+      }
+      .save-button {
+        right: 60px;
+      }
+      .refresh-animation {
+        animation: rotate 1s linear infinite;
+      }
+      @keyframes rotate {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .reload-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.5);
+        z-index: 999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Streaming Data Dashboard</h1>
+      <!-- Chart Containers -->
+      <div class="chart-container" id="violations-chart-container">
+        <h2>Violations Chart - Number of Violations per Route</h2>
+        <canvas id="violations-chart"></canvas>
+        <button class="refresh-button" id="violations-refresh">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="save-button" id="violations-save">
+          <i class="fas fa-download"></i>
+        </button>
+      </div>
+      <div class="chart-container" id="car-type-chart-container">
+        <h2>Vehicle Types Chart - Most Violated Vehicle Types</h2>
+        <canvas id="car-type-chart"></canvas>
+        <button class="refresh-button" id="car-type-refresh">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="save-button" id="car-type-save">
+          <i class="fas fa-download"></i>
+        </button>
+      </div>
+      <div class="chart-container" id="travels-chart-container">
+        <h2>Travels Chart - Routes with Most Travels</h2>
+        <canvas id="travels-chart"></canvas>
+        <button class="refresh-button" id="travels-refresh">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="save-button" id="travels-save">
+          <i class="fas fa-download"></i>
+        </button>
+      </div>
+      <div class="chart-container" id="delays-chart-container">
+        <h2>Delays Chart - Routes with Most Delays</h2>
+        <canvas id="delays-chart"></canvas>
+        <button class="refresh-button" id="delays-refresh">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="save-button" id="delays-save">
+          <i class="fas fa-download"></i>
+        </button>
+      </div>
+      <div class="chart-container" id="delays-vehicles-chart-container">
+        <h2>Delays by Vehicle Types - Most Delayed Vehicle Types</h2>
+        <canvas id="delays-vehicles-chart"></canvas>
+        <button class="refresh-button" id="delays-vehicles-refresh">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="save-button" id="delays-vehicles-save">
+          <i class="fas fa-download"></i>
+        </button>
+      </div>
+    </div>
+    <!-- External Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <!-- Internal Scripts -->
+    <script>
+      $(document).ready(function () {
+        fetchDataAndUpdateCharts();
+
+        // Set interval to refresh data every 5 seconds
+        setInterval(fetchDataAndUpdateCharts, 5000);
+
+        var colorPalette = [
+          "#ff9999",
+          "#66b3ff",
+          "#99ff99",
+          "#ffcc99",
+          "#c2c2f0",
+          "#ffb3e6",
+          "#c2f0c2",
+          "#ffff99",
+          "#ffb3b3",
+          "#99e6e6",
+        ];
+
+        function fetchDataAndUpdateCharts() {
+          $.ajax({
+            url: "/streaming",
+            type: "GET",
+            success: function (response) {
+              displayViolationsChart(response.streaming_data);
+              fetchCarTypesAndUpdateChart();
+              fetchTravelsAndUpdateChart();
+              fetchDelaysAndUpdateChart();
+              fetchDelaysVehiclesAndUpdateChart();
+              hideReloadOverlay();
+            },
+            error: function (error) {
+              console.error("Error fetching data:", error);
+              hideReloadOverlay();
+            },
+          });
+        }
+
+        function displayViolationsChart(data) {
+          var ctx = document
+            .getElementById("violations-chart")
+            .getContext("2d");
+
+          if (window.violationsChart) {
+            window.violationsChart.destroy();
+          }
+
+          var routes = {};
+          var colors = [];
+          data.forEach(function (item, index) {
+            var route = item["Start Gate"] + " to " + item["End Gate"];
+            if (!routes[route]) {
+              routes[route] = 1;
+            } else {
+              routes[route]++;
+            }
+            colors.push(colorPalette[index % colorPalette.length]);
+          });
+
+          var labels = Object.keys(routes);
+          var dataCounts = Object.values(routes);
+
+          window.violationsChart = new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: "Number of Violations",
+                  data: dataCounts,
+                  backgroundColor: colors,
+                  borderColor: colors,
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              animation: {
+                duration: 1000,
+                easing: "easeInOutQuart",
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "Number of Violations",
+                    font: {
+                      size: 16,
+                      weight: "bold",
+                    },
+                  },
+                  ticks: {
+                    font: {
+                      size: 14,
+                    },
+                  },
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: "Routes",
+                    font: {
+                      size: 16,
+                      weight: "bold",
+                    },
+                  },
+                  ticks: {
+                    font: {
+                      size: 14,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          $("#violations-refresh").click(function () {
+            updateViolationsChart(window.violationsChart, data);
+            animateRefreshButton($("#violations-refresh"));
+            showReloadOverlay();
+          });
+        }
+
+        function updateViolationsChart(chart, data) {
+          var routes = {};
+          var colors = [];
+          data.forEach(function (item, index) {
+            var route = item["Start Gate"] + " to " + item["End Gate"];
+            if (!routes[route]) {
+              routes[route] = 1;
+            } else {
+              routes[route]++;
+            }
+            colors.push(colorPalette[index % colorPalette.length]);
+          });
+
+          var labels = Object.keys(routes);
+          var dataCounts = Object.values(routes);
+
+          chart.data.labels = labels;
+          chart.data.datasets[0].data = dataCounts;
+          chart.data.datasets[0].backgroundColor = colors;
+          chart.update({
+            duration: 1000,
+            easing: "easeInOutQuart",
+          });
+        }
+
+        function fetchCarTypesAndUpdateChart() {
+          $.ajax({
+            url: "/car_types",
+            type: "GET",
+            success: function (response) {
+              displayCarTypeChart(response.car_types);
+            },
+            error: function (error) {
+              console.error("Error fetching car types:", error);
+            },
+          });
+        }
+
+        function displayCarTypeChart(carTypes) {
+          var ctx = document.getElementById("car-type-chart").getContext("2d");
+
+          if (window.carTypeChart) {
+            window.carTypeChart.destroy();
+          }
+
+          var labels = Object.keys(carTypes);
+          var dataCounts = Object.values(carTypes);
+          var colors = Object.values(colorPalette);
+
+          window.carTypeChart = new Chart(ctx, {
+            type: "pie",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: "Number of Violations",
+                  data: dataCounts,
+                  backgroundColor: colors,
+                  borderColor: colors,
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              animation: {
+                duration: 1000,
+                easing: "easeInOutQuart",
+              },
+              aspectRatio: 1.5,
+            },
+          });
+
+          $("#car-type-refresh").click(function () {
+            fetchDataAndUpdateCharts();
+            animateRefreshButton($("#car-type-refresh"));
+          });
+        }
+
+        function fetchTravelsAndUpdateChart() {
+          $.ajax({
+            url: "/travels",
+            type: "GET",
+            success: function (response) {
+              displayTravelsChart(response.travels_data);
+            },
+            error: function (error) {
+              console.error("Error fetching travels data:", error);
+            },
+          });
+        }
+
+        function displayTravelsChart(travelsData) {
+          var ctx = document.getElementById("travels-chart").getContext("2d");
+
+          if (window.travelsChart) {
+            window.travelsChart.destroy();
+          }
+
+          var routes = {};
+          var colors = [];
+          travelsData.forEach(function (item, index) {
+            var route = item["Start Gate"] + " to " + item["End Gate"];
+            if (!routes[route]) {
+              routes[route] = 1;
+            } else {
+              routes[route]++;
+            }
+            colors.push(colorPalette[index % colorPalette.length]);
+          });
+
+          var labels = Object.keys(routes);
+          var dataCounts = Object.values(routes);
+
+          window.travelsChart = new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: "Number of Travels",
+                  data: dataCounts,
+                  backgroundColor: colors,
+                  borderColor: colors,
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              animation: {
+                duration: 1000,
+                easing: "easeInOutQuart",
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "Number of Travels",
+                    font: {
+                      size: 16,
+                      weight: "bold",
+                    },
+                  },
+                  ticks: {
+                    font: {
+                      size: 14,
+                    },
+                  },
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: "Routes",
+                    font: {
+                      size: 16,
+                      weight: "bold",
+                    },
+                  },
+                  ticks: {
+                    font: {
+                      size: 14,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          $("#travels-refresh").click(function () {
+            fetchDataAndUpdateCharts();
+            animateRefreshButton($("#travels-refresh"));
+          });
+        }
+
+        function fetchDelaysAndUpdateChart() {
+          $.ajax({
+            url: "/delays",
+            type: "GET",
+            success: function (response) {
+              displayDelaysChart(response.delays_data);
+            },
+            error: function (error) {
+              console.error("Error fetching delays data:", error);
+            },
+          });
+        }
+
+        function displayDelaysChart(delaysData) {
+          var ctx = document.getElementById("delays-chart").getContext("2d");
+
+          if (window.delaysChart) {
+            window.delaysChart.destroy();
+          }
+
+          var routes = {};
+          var colors = colorPalette;
+          delaysData.forEach(function (item, index) {
+            var route = item["Start_Gate"] + " to " + item["End_Gate"];
+            if (!routes[route]) {
+              routes[route] = 1;
+            } else {
+              routes[route]++;
+            }
+          });
+
+          var labels = Object.keys(routes);
+          var dataCounts = Object.values(routes);
+
+          window.delaysChart = new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: "Number of Delays",
+                  data: dataCounts,
+                  backgroundColor: colors,
+                  borderColor: colors,
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              animation: {
+                duration: 1000,
+                easing: "easeInOutQuart",
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "Number of Delays",
+                    font: {
+                      size: 16,
+                      weight: "bold",
+                    },
+                  },
+                  ticks: {
+                    font: {
+                      size: 14,
+                    },
+                  },
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: "Routes",
+                    font: {
+                      size: 16,
+                      weight: "bold",
+                    },
+                  },
+                  ticks: {
+                    font: {
+                      size: 14,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          $("#delays-refresh").click(function () {
+            fetchDataAndUpdateCharts();
+            animateRefreshButton($("#delays-refresh"));
+          });
+        }
+
+        function fetchDelaysVehiclesAndUpdateChart() {
+          $.ajax({
+            url: "/types_delay",
+            type: "GET",
+            success: function (response) {
+              displayDelaysVehiclesChart(response.car_types);
+            },
+            error: function (error) {
+              console.error("Error fetching delays vehicles data:", error);
+            },
+          });
+        }
+
+        function displayDelaysVehiclesChart(delaysVehiclesData) {
+          var ctx = document
+            .getElementById("delays-vehicles-chart")
+            .getContext("2d");
+
+          if (window.delaysVehiclesChart instanceof Chart) {
+            window.delaysVehiclesChart.destroy();
+          }
+
+          var labels = Object.keys(delaysVehiclesData);
+          var dataCounts = Object.values(delaysVehiclesData);
+          var colors = colorPalette.slice(0, labels.length);
+
+          window.delaysVehiclesChart = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: "Number of Delays",
+                  data: dataCounts,
+                  backgroundColor: colors,
+                  borderColor: colors,
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              animation: {
+                duration: 1000,
+                easing: "easeInOutQuart",
+              },
+              aspectRatio: 1.5,
+            },
+          });
+        }
+
+        $("#delays-refresh").click(function () {
+          fetchDelaysVehiclesAndUpdateChart();
+          animateRefreshButton($("#delays-refresh"));
+        });
+
+        function animateRefreshButton($button) {
+          $button.addClass("refresh-animation");
+          setTimeout(function () {
+            $button.removeClass("refresh-animation");
+          }, 1000);
+        }
+
+        function saveChart(chart) {
+          var canvas = chart.canvas;
+          canvas.toBlob(function (blob) {
+            var blobUrl = URL.createObjectURL(blob);
+            var link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = "chart.png";
+            link.click();
+            URL.revokeObjectURL(blobUrl);
+          });
+        }
+
+        $(".save-button").click(function () {
+          var chartId = $(this).parent().attr("id");
+          var chart;
+          switch (chartId) {
+            case "violations-chart-container":
+              chart = window.violationsChart;
+              break;
+            case "car-type-chart-container":
+              chart = window.carTypeChart;
+              break;
+            case "travels-chart-container":
+              chart = window.travelsChart;
+              break;
+            case "delays-chart-container":
+              chart = window.delaysChart;
+              break;
+            case "delays-vehicles-chart-container":
+              chart = window.delaysVehiclesChart;
+              break;
+          }
+          if (chart) {
+            saveChart(chart);
+          }
+        });
+
+        function hideReloadOverlay() {
+          $("#reload-overlay").fadeOut();
+        }
+
+        function showReloadOverlay() {
+          $("#reload-overlay").fadeIn();
+          setTimeout(hideReloadOverlay, 1000);
+        }
+      });
+    </script>
+  </body>
+</html>

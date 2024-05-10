@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSON Data</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    canvas {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Delay Data (Sorted by Gate)</h2>
+  <canvas id="delayChart" width="600" height="400"></canvas>
+
+  <h2>Travel Data (Sorted by Occurrence)</h2>
+  <canvas id="travelChart" width="600" height="400"></canvas>
+
+  <h2>Joined Data</h2>
+  <canvas id="joinedChart" width="600" height="400"></canvas>
+
+  <script>
+    fetch("/json_data")
+      .then((response) => response.json())
+      .then((data) => {
+        const delayData = data.delay_records
+          .map((record) => {
+            const startDateTime = new Date(record.Start_Date).getTime();
+            const endDateTime = new Date(record.Arrival_End_Date).getTime();
+            const delay = (endDateTime - startDateTime) / 1000;
+            return {
+              ...record,
+              Delay: delay,
+              GateToGate: `${record.Start_Gate} - ${record.End_Gate}`,
+            };
+          })
+          .sort((a, b) => a.GateToGate.localeCompare(b.GateToGate));
+        const delayLabels = delayData.map((record) => record.GateToGate);
+        const delayValues = delayData.map((record) => record.Delay);
+
+        const travelDataMap = new Map();
+        data.travel_records.forEach((record) => {
+          const key = `${record.Start_Gate} - ${record.End_Gate}`;
+          travelDataMap.set(key, (travelDataMap.get(key) || 0) + 1);
+        });
+        const travelData = [...travelDataMap].sort((a, b) => b[1] - a[1]);
+        const travelLabels = travelData.map((record) => record[0]);
+        const travelOccurrences = travelData.map((record) => record[1]);
+
+        const joinedData = data.joined_records;
+        const joinedLabels = joinedData.map(
+          (record) => `${record.Delay_Start_Gate} - ${record.Delay_End_Gate}`
+        );
+        const joinedValues = joinedData.map((record) => record.time_seconds);
+
+        const delayCtx = document
+          .getElementById("delayChart")
+          .getContext("2d");
+        new Chart(delayCtx, {
+          type: "bar",
+          data: {
+            labels: delayLabels,
+            datasets: [
+              {
+                label: "Delay (seconds)",
+                data: delayValues,
+                backgroundColor: "rgba(255, 99, 132, 0.6)",
+                borderColor: "rgba(255, 99, 132, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            animation: {
+              duration: 2000,
+              easing: "easeInOutQuart",
+            },
+            scales: {
+              yAxes: [
+                {
+                  ticks: { beginAtZero: true },
+                  scaleLabel: {
+                    display: true,
+                    labelString: "Delay (seconds)",
+                  },
+                },
+              ],
+              xAxes: [
+                {
+                  scaleLabel: {
+                    display: true,
+                    labelString: "Gate to Gate",
+                  },
+                },
+              ],
+            },
+            legend: {
+              display: false,
+            },
+
+            barPercentage: 0.8,
+            categoryPercentage: 0.6,
+          },
+        });
+
+        const travelCtx = document
+          .getElementById("travelChart")
+          .getContext("2d");
+        new Chart(travelCtx, {
+          type: "bar",
+          data: {
+            labels: travelLabels,
+            datasets: [
+              {
+                label: "Occurrences",
+                data: travelOccurrences,
+                backgroundColor: "rgba(54, 162, 235, 0.6)",
+                borderColor: "rgba(54, 162, 235, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            animation: {
+              duration: 2000,
+              easing: "easeInOutQuart",
+            },
+            scales: {
+              yAxes: [
+                {
+                  ticks: { beginAtZero: true },
+                  scaleLabel: {
+                    display: true,
+                    labelString: "Occurrences",
+                  },
+                },
+              ],
+              xAxes: [
+                {
+                  scaleLabel: {
+                    display: true,
+                    labelString: "Gate to Gate",
+                  },
+                },
+              ],
+            },
+            legend: {
+              display: false,
+            },
+
+            barPercentage: 0.8,
+            categoryPercentage: 0.6,
+          },
+        });
+
+        const joinedCtx = document
+          .getElementById("joinedChart")
+          .getContext("2d");
+        new Chart(joinedCtx, {
+          type: "bar",
+          data: {
+            labels: joinedLabels,
+            datasets: [
+              {
+                label: "Time (seconds)",
+                data: joinedValues,
+                backgroundColor: "rgba(75, 192, 192, 0.6)",
+                borderColor: "rgba(75, 192, 192, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            animation: {
+              duration: 2000,
+              easing: "easeInOutQuart",
+            },
+            scales: {
+              yAxes: [
+                {
+                  ticks: { beginAtZero: true },
+                  scaleLabel: {
+                    display: true,
+                    labelString: "Time (seconds)",
+                  },
+                },
+              ],
+              xAxes: [
+                {
+                  scaleLabel: {
+                    display: true,
+                    labelString: "Gate to Gate",
+                  },
+                },
+              ],
+            },
+            legend: {
+              display: false,
+            },
+
+            barPercentage: 0.8,
+            categoryPercentage: 0.6,
+          },
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  </script>
+</body>
+
+</html>

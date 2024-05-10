@@ -17,6 +17,7 @@ SHEET4 = "all_governments"
 KAFKA_BROKER = "localhost:9092"
 KAFKA_TOPIC = "travel_data"
 VIOLATIONS_TOPIC = "violations"
+DELAYS_TOPIC = "delays"
 
 # ----------------------------- MYSQL CONSTANTS -----------------------------#
 MYSQL_HOST = "localhost"

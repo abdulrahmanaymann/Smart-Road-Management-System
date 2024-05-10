@@ -1,16 +1,39 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-</head>
-<body>
-    <h2>Login</h2>
-    <form method="post">
-        <label for="id">ID:</label><br>
-        <input type="text" id="id" name="id" required><br>
-        <input type="submit" value="Login">
-    </form>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block head %}
+
+<title>Login</title>
+<link rel="stylesheet" href="/static/login.css" />
+{% endblock %}
+
+{% block content %}
+<div class="center">
+  <h2>Login</h2>
+  <form method="post">
+    <span>Name:</span>
+
+    <div class="inputbox">
+      <input type="name" id="name" name="name" placeholder="Name" required />
+    </div>
+    <span>Email:</span>
+    <div class="inputbox">
+      <input type="email" id="email" name="email" placeholder="Email" required />
+    </div>
+    <span>Password:</span>
+
+    <div class="inputbox">
+      <input type="password" id="password" name="password" placeholder="Password" required />
+    </div>
+    <div class="inputbox">
+      <button type="submit">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        Login
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

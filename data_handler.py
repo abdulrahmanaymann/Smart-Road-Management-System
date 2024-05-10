@@ -181,10 +181,13 @@ def process_new_travel_data(
         )
         if conn and cursor:
             try:
+                cursor.execute("SELECT * FROM vehicles WHERE Number_Type = %s ", (id,))
+                user = cursor.fetchone()
 
-                query = "INSERT INTO travels (ID, Start_Gate, End_Gate, Distance, Start_Travel_Date	, End_Travel_Date) VALUES (%s ,%s ,%s , %s, %s, %s)"
+                query = "INSERT INTO travels (Travel_id,Vehicle_id, Start_Gate, End_Gate, Distance, Start_Travel_Date, End_Travel_Date) VALUES (%s ,%s,%s ,%s , %s, %s, %s)"
                 value = (
                     formatted_id,
+                    user[0],
                     start_gate,
                     end_gate,
                     distance,
@@ -260,7 +263,9 @@ def To_Nifi(r, df_governorates, id, start_Gate, end_Gate, distance, start_date):
             }
             val = list(decoded_data.values())
             if start_Gate == val[2]:
-                print("This travel is recored before")
+                LOGGER.warning(
+                    f"Travel ID: {id} already exists with the same start gate."
+                )
             else:
                 print(f"{decoded_data}")
                 r.delete(key)
@@ -268,9 +273,6 @@ def To_Nifi(r, df_governorates, id, start_Gate, end_Gate, distance, start_date):
                     r.delete(late)
                 process_travels_data(
                     id, start_Gate, distance, end_Gate, df_governorates, r, start_date
-                )
-                print(
-                    f"Violation Detection!!!! \nthe previous key {key.decode('utf-8')} is DELETED FROM REDIS",
                 )
 
     else:
@@ -285,14 +287,11 @@ def To_Nifi(r, df_governorates, id, start_Gate, end_Gate, distance, start_date):
                 process_travels_data(
                     id, start_Gate, distance, end_Gate, df_governorates, r, start_date
                 )
-                print(
-                    f"Delay Detection!!!! \nthe previous key {keys.decode('utf-8').split(')')[1]} is DELETED FROM REDIS",
-                )
+                LOGGER.error(f"Travel ID: {id} is late.")
 
         else:
             process_travels_data(
                 id, start_Gate, distance, end_Gate, df_governorates, r, start_date
             )
-            print(
-                f"THERE IS NO such DATA in REDIS, BUT DATA SAVED TO REDIS ",
-            )
+
+            LOGGER.error(f"Travel ID: {id} is not late.")

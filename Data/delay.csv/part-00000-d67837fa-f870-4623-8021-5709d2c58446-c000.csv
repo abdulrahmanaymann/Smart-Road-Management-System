@@ -1,0 +1,7 @@
+Car_ID,Start_Gate,End_Gate,Start_Date,Arrival_End_Date
+1_Car,Giza,Qalyubia,2024-03-11 16:13:25,2024-03-11 17:19:47
+1_Car,Giza,Qalyubia,2024-03-11 16:13:25,2024-03-11 17:30:29
+2_Car,Cairo,Giza,2024-03-12 14:46:06,2024-03-12 14:49:49
+3_Car,Cairo,Giza,2024-03-14 16:54:28,2024-03-14 16:58:16
+1_Car,Cairo,Giza,2024-03-14 20:59:54,2024-03-14 21:05:41
+123_Car,Giza,Qalyubia,2024-04-14 14:41:34,2024-04-14 15:03:11

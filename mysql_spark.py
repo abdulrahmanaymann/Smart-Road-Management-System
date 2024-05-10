@@ -92,20 +92,18 @@ delay = mysql_delays()
 travel = mysql_travels()
 print("DELAYS:::\n")
 delay.show()
-# CSV
-delay.write.csv(f"{OUTPUT_PATH}/delay.csv", mode="append", header=True)
+
 
 print("TRAVELS:::\n")
 travel.show()
-# CSV
-travel.write.csv(f"{OUTPUT_PATH}/travel.csv", mode="append", header=True)
+
 
 delay = delay.selectExpr(
     "Car_ID as Delay_Car_ID",
     "Start_Gate as Delay_Start_Gate",
     "End_Gate as Delay_End_Gate",
     "Start_Date as Delay_Start_Date",
-    "Arrival_End_Date as Delay_Arrival_End_Date"
+    "Arrival_End_Date as Delay_Arrival_End_Date",
 )
 
 
@@ -115,14 +113,16 @@ travel = travel.selectExpr(
     "End_Gate as Travel_End_Gate",
     "Distance",
     "Start_Travel_Date",
-    "End_Travel_Date"
+    "End_Travel_Date",
 )
 
 joined_df = (
-    travel.join(delay, 
-                (travel["Travel_Start_Gate"] == delay["Delay_Start_Gate"]) &
-                (travel["Start_Travel_Date"] == delay["Delay_Start_Date"]), 
-                "inner")
+    travel.join(
+        delay,
+        (travel["Travel_Start_Gate"] == delay["Delay_Start_Gate"])
+        & (travel["Start_Travel_Date"] == delay["Delay_Start_Date"]),
+        "inner",
+    )
     .withColumn("Arrival_End_Date", unix_timestamp("Delay_Arrival_End_Date"))
     .withColumn("End_Travel_Date", unix_timestamp("End_Travel_Date"))
     .withColumn("time_seconds", col("Arrival_End_Date") - col("End_Travel_Date"))
@@ -135,10 +135,9 @@ joined_df = (
 
 joined_df.show()
 
-# CSV
-joined_df.write.csv(f"{OUTPUT_PATH}/joined_df.csv", mode="append", header=True)
-
-spark.stop()
-
+# * OUTPUT
+delay.write.json(f"output/delay", mode="overwrite")
+travel.write.json(f"output/travel", mode="overwrite")
+joined_df.write.json(f"output/joined", mode="overwrite")
 
 spark.stop()
