@@ -1,5 +1,6 @@
 from datetime import datetime
 import hashlib
+import io
 import secrets
 import sys
 import threading
@@ -22,6 +23,7 @@ from Config.config import *
 from excel_reader import read_excel_sheets
 from Spark_stream import run_spark_job
 from Flask_Functions import *
+from assignedVehicles import *
 
 r = get_redis_connection()
 p = get_kafka_producer(KAFKA_BROKER)
@@ -234,16 +236,35 @@ def hash_password(password):
 def APP():
     if request.method == "POST":
         try:
-            car_id = request.form.get("ID")
+            if "image" in request.files and request.files["image"]:
+                uploaded_image = request.files["image"]
 
+                filename = uploaded_image.filename
+
+                image_directory = "Datasets\\Egyptain Cars\\Before Cropping\\"
+
+                uploaded_image_path = os.path.join(image_directory, filename)
+
+                print("Image uploaded")
+                print("Uploaded image filename:", uploaded_image_path)
+
+                car_id = Get_Vehicle_ID(uploaded_image_path)
+                print(f"Extracted ID from image: {car_id}")
+            else:
+                car_id = request.form.get("ID")
             start_gate = request.form.get("StartGate")
 
             start_date = datetime.now()
             car_type = car_id.split("_")[1]
             print(f"id :{car_id} , startgate:{start_gate}")
+
+            print(f"start_gate: {start_gate}")
             min_key, end_gate, min_value = Calaulate_Lowest_Distance(
                 start_gate, df_dict
             )
+            print(f"min_key: {min_key}")
+            print(f"end_gate: {end_gate}")
+
             ttl, _ = calculate_ttl(min_value, car_type, end_gate, governorates_dict, r)
             actual_end_date = start_date + timedelta(seconds=ttl)
 
@@ -269,11 +290,13 @@ def APP():
             producer.flush()
 
         except Exception as e:
+            print(f"Error occurred: {e}")
             return f"Erroooooooooooor!\n{e}"
 
         else:
             return render_template("index.html")
     return render_template("index.html")
+
 
 @app.route("/<name>")
 def driver_info(name):

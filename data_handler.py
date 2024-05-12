@@ -75,6 +75,7 @@ def calculate_ttl(
         legal_speed = redis_connection.hget(
             f"vehicle_data:{vehicle_type}", "Legal Speed"
         )
+        print(f"legal_speed retrieved from Redis: {legal_speed}")
         if legal_speed is None:
             return None, None
 
