@@ -198,6 +198,9 @@ def process_new_travel_data(
                 cursor.execute(query, value)
                 conn.commit()
                 LOGGER.info("Data inserted into MySQL successfully.")
+            except Exception as e:
+                LOGGER.error(f"Error occurred: error in db")
+                return None
             finally:
                 cursor.close()
                 conn.close()

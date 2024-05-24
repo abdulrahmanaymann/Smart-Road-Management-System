@@ -300,8 +300,11 @@ def APP():
 
 @app.route("/<name>")
 def driver_info(name):
-    travel_info, violations = get_driver_info(name)
-    email, car_ids = get_driver_profile(name)
+    conn, cursor = DB_Connection(
+        MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
+        )
+    travel_info, violations = get_driver_info(name, conn, cursor)
+    email, car_ids = get_driver_profile(name, conn, cursor)
 
     if travel_info:
         return render_template(
@@ -312,6 +315,8 @@ def driver_info(name):
         )
     else:
         return "Driver information not found."
+
+
 
 @app.route("/", methods=["GET", "POST"])
 @app.route("/login", methods=["GET", "POST"])
@@ -379,7 +384,7 @@ def register_driver():
             (email, name, password),
         )
         conn.commit()
-        return redirect(url_for("login"))  
+        return redirect(url_for("login"))
     return render_template("register_driver.html")
 
 
@@ -389,21 +394,18 @@ def register_admin():
         email = request.form["email"]
         name = request.form["name"]
         password = hash_password(request.form["password"])
-        
+
         cursor.execute(
             "INSERT INTO admins (email, name, password) VALUES (%s, %s, %s)",
             (email, name, password),
         )
         conn.commit()
-        return redirect(url_for("login"))  
+        return redirect(url_for("login"))
     return render_template("register_admin.html")
 
 
-
-
-
 if __name__ == "__main__":
-    """     spark_thread = threading.Thread(target=run_spark_job)
+    """ spark_thread = threading.Thread(target=run_spark_job)
     spark_thread.start() """
 
     app.run(debug=True)

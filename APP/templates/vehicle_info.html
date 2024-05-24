@@ -334,8 +334,29 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
     <script>
       $(document).ready(function () {
-        var activeTab = $(".nav-tabs .active").attr("href");
-        $(activeTab).addClass("show active");
+        function setActiveTab(tabId) {
+          localStorage.setItem("activeTab", tabId);
+        }
+
+        function getActiveTab() {
+          return localStorage.getItem("activeTab");
+        }
+
+        var activeTabId = getActiveTab();
+        if (activeTabId) {
+          $(".tab-pane").removeClass("show active");
+          $(activeTabId).addClass("show active");
+        }
+
+        $(".sidebar ul a")
+          .not('[href="/logout"]')
+          .click(function (e) {
+            e.preventDefault();
+            var target = $(this).attr("href");
+            $(".tab-pane").removeClass("show active");
+            $(target).addClass("show active");
+            setActiveTab(target);
+          });
 
         $("#check").change(function () {
           if ($(this).is(":checked")) {
@@ -350,17 +371,7 @@
           window.location.href = $(this).attr("href");
         });
 
-        $(".sidebar ul a")
-          .not('[href="/logout"]')
-          .click(function (e) {
-            e.preventDefault();
-            var target = $(this).attr("href");
-            $(".tab-pane").removeClass("show active");
-            $(target).addClass("show active");
-          });
-
         var paidRecords = JSON.parse(localStorage.getItem("paidRecords")) || [];
-
         paidRecords.forEach(function (recordId) {
           $("form input[value='" + recordId + "']")
             .closest(".card")

@@ -59,23 +59,29 @@ def is_json_file(file_name):
     return file_name.endswith(".json")
 
 
-def get_driver_info(name):
-    if conn and cursor:
-        try:
-
+def get_driver_info(name, conn, cursor):
+    try:
+        if conn and cursor:
             query_driver = "SELECT * FROM drivers WHERE name = %s"
             cursor.execute(query_driver, (name,))
             driver_data = cursor.fetchone()
 
             if driver_data:
-
                 driver_id = driver_data[0]
 
-                query_travels = "SELECT Travel_id, Start_Gate, End_Gate, Distance, Start_Travel_Date, End_Travel_Date FROM travels WHERE Vehicle_id IN (SELECT id FROM vehicles WHERE driver_id = %s)"
+                query_travels = """
+                    SELECT Travel_id, Start_Gate, End_Gate, Distance, Start_Travel_Date, End_Travel_Date
+                    FROM travels
+                    WHERE Vehicle_id IN (SELECT id FROM vehicles WHERE driver_id = %s)
+                """
                 cursor.execute(query_travels, (driver_id,))
                 travel_data = cursor.fetchall()
 
-                query_violations = "SELECT Car_ID, Start_Gate, End_Gate, Start_Date, Arrival_End_Date, Payment_Status FROM violations WHERE Car_id IN (SELECT Number_type FROM vehicles WHERE driver_id = %s) AND Payment_Status = 'unpaid'"
+                query_violations = """
+                    SELECT Car_ID, Start_Gate, End_Gate, Start_Date, Arrival_End_Date, Payment_Status
+                    FROM violations
+                    WHERE Car_id IN (SELECT Number_type FROM vehicles WHERE driver_id = %s) AND Payment_Status = 'unpaid'
+                """
                 cursor.execute(query_violations, (driver_id,))
                 violation_data = cursor.fetchall()
 
@@ -106,16 +112,13 @@ def get_driver_info(name):
                     )
 
                 return travels, violations
-            else:
-                return None, None
-
-        except Exception as e:
-            print(f"Error fetching travel and violation data: {e}")
+    except Exception as e:
+        print(f"Error fetching travel and violation data: {e}")
 
     return None, None
 
 
-def get_driver_profile(name):
+def get_driver_profile(name, conn, cursor):
     if conn and cursor:
         try:
             query_driver = "SELECT * FROM drivers WHERE name = %s"
