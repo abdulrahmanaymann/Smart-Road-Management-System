@@ -15,6 +15,16 @@
     />
 
     <style>
+      @keyframes icon-bounce {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-5px);
+        }
+      }
+
       body {
         margin: 0;
         padding: 0;
@@ -58,10 +68,17 @@
 
       .sidebar ul a:hover {
         padding-left: 50px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fee715ff;
       }
 
       .sidebar ul a i {
         margin-right: 16px;
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar ul a:hover i {
+        animation: icon-bounce 0.6s infinite;
       }
 
       label {
@@ -80,6 +97,8 @@
         background: #fee715ff;
         border-radius: 3px;
         cursor: pointer;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s;
       }
 
       label #btn {
@@ -88,7 +107,10 @@
         font-size: 35px;
         color: white;
         padding: 6px 12px;
-        transition: all 0.5s;
+      }
+
+      label #btn:hover {
+        transform: scale(1.1);
       }
 
       label #cancel {
@@ -98,7 +120,10 @@
         font-size: 30px;
         color: #000;
         padding: 4px 9px;
-        transition: all 0.5s ease;
+      }
+
+      label #cancel:hover {
+        transform: scale(1.1);
       }
 
       #check:checked ~ .sidebar {
@@ -122,20 +147,29 @@
       .content {
         margin-left: 250px;
         padding: 20px;
+        transition: margin-left 0.5s ease;
       }
 
       .tab-pane {
         display: none;
+        opacity: 0;
+        transition: opacity 0.5s ease;
       }
 
       .tab-pane.active {
         display: block;
+        opacity: 1;
       }
 
       .card {
         margin-bottom: 20px;
         border: none;
         box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-10px);
       }
 
       .card-header {
@@ -143,20 +177,58 @@
         color: #000;
         font-weight: bold;
         border-bottom: none;
+        text-align: center;
+        padding: 15px;
       }
 
       .card-body {
         background-color: #fff;
         color: #000;
+        padding: 20px;
       }
 
       .list-group-item {
         background-color: #fff;
         border: none;
+        padding: 15px;
+        transition: background 0.3s;
       }
 
       .list-group-item:nth-child(odd) {
         background-color: #f8f9fa;
+      }
+
+      .list-group-item:hover {
+        background-color: #fee715ff;
+        color: #000;
+      }
+
+      h2.display-4 {
+        font-size: 2.5rem;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+      }
+
+      p.lead {
+        font-size: 1.2rem;
+        font-weight: bold;
+      }
+
+      .row.row-cols-md-3 .col {
+        transition: transform 0.3s ease;
+      }
+
+      .row.row-cols-md-3 .col:hover {
+        transform: scale(1.05);
+      }
+
+      .btn-danger {
+        transition: background-color 0.3s ease, transform 0.3s ease;
+      }
+
+      .btn-danger:hover {
+        background-color: #ff4444;
+        transform: scale(1.05);
       }
     </style>
   </head>
@@ -202,12 +274,13 @@
               <div class="col-lg-8">
                 <div class="card shadow border-0">
                   <div class="card-body p-5">
-                    <div class="text-center mb-5">
+                    <div class="text-center mb-4">
                       <h2 class="display-4">Driver Profile</h2>
+                      <i class="fas fa-user-circle fa-5x text-primary mb-3"></i>
                     </div>
                     <div class="row mb-4">
                       <div class="col-md-4 text-md-right">
-                        <h5 class="mb-0">Name:</h5>
+                        <h5 class="font-weight-bold mb-0">Name:</h5>
                       </div>
                       <div class="col-md-8">
                         <p class="lead">{{ driver_profile.name }}</p>
@@ -215,7 +288,7 @@
                     </div>
                     <div class="row mb-4">
                       <div class="col-md-4 text-md-right">
-                        <h5 class="mb-0">Email:</h5>
+                        <h5 class="font-weight-bold mb-0">Email:</h5>
                       </div>
                       <div class="col-md-8">
                         <p class="lead">{{ driver_profile.email }}</p>
@@ -223,16 +296,16 @@
                     </div>
                     <div class="row mb-4">
                       <div class="col-md-4 text-md-right">
-                        <h5 class="mb-0">Associated Car IDs:</h5>
+                        <h5 class="font-weight-bold mb-0">
+                          Associated Car IDs:
+                        </h5>
                       </div>
                       <div class="col-md-8">
-                        <div class="row row-cols-md-3 g-4">
+                        <div class="row row-cols-1 row-cols-md-2 g-3">
                           {% for car_id in driver_profile.car_ids %}
                           <div class="col mb-3">
-                            <div class="card border-0 bg-light shadow-sm">
-                              <div class="card-body text-center">
-                                <p class="mb-0">{{ car_id }}</p>
-                              </div>
+                            <div class="card border-0 bg-light shadow-sm p-3">
+                              <p class="mb-0 text-center">{{ car_id }}</p>
                             </div>
                           </div>
                           {% endfor %}
@@ -253,7 +326,6 @@
           role="tabpanel"
           aria-labelledby="travels-tab"
         >
-          <h2>Travels</h2>
           <div class="row">
             {% for travels in travel %}
             <div class="col-md-6">
@@ -287,7 +359,6 @@
           role="tabpanel"
           aria-labelledby="violations-tab"
         >
-          <h2>Violations</h2>
           <div class="row">
             {% for violations in violation %}
             <div class="col-md-6">
