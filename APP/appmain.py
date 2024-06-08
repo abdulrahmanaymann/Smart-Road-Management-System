@@ -356,7 +356,7 @@ def logout():
 
 
 @app.route("/paid")
-def paid():
+def paid(): # get paid violations
     return render_template("payment.html")
 
 @app.route("/update", methods=["POST"])
