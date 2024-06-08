@@ -9,6 +9,9 @@ from Config.Logger import *
 
 
 checkpoint_location = "output/checkpoints"
+checkpoint_location_violations = "output/checkpoints/violations"
+checkpoint_location_travels = "output/checkpoints/travels"
+checkpoint_location_delays = "output/checkpoints/delays"
 
 
 def run_spark_job():
@@ -41,23 +44,23 @@ def run_spark_job():
     travels_df = read_from_mysql(TRAVELS)
     delays_df = read_from_mysql(DELAYS)
 
-    travels_df.show()
-    violations_df.show()
-    delays_df.show()
+    #travels_df.show()
+    #violations_df.show()
+    #delays_df.show()
 
-    #!! for test purposes only
-    """     def send_to_kafka_topic(df, topic):
-        kafka_producer = KafkaProducer(bootstrap_servers=KAFKA_BROKER)
-        rows = df.collect()
-        for row in rows:
-            kafka_producer.send(topic, str(row).encode("utf-8"))
-        kafka_producer.flush()
-        kafka_producer.close()
+    """     #!! for test purposes only
+        def send_to_kafka_topic(df, topic):
+            kafka_producer = KafkaProducer(bootstrap_servers=KAFKA_BROKER)
+            rows = df.collect()
+            for row in rows:
+                kafka_producer.send(topic, str(row).encode("utf-8"))
+            kafka_producer.flush()
+            kafka_producer.close()
 
         send_to_kafka_topic(violations_df, VIOLATIONS_TOPIC)
         send_to_kafka_topic(travels_df, KAFKA_TOPIC)
-        send_to_kafka_topic(delays_df, DELAYS_TOPIC)
-     """
+        send_to_kafka_topic(delays_df, DELAYS_TOPIC)  """
+
     schema = StructType(
         [
             StructField("ID", StringType(), True),
@@ -94,7 +97,7 @@ def run_spark_job():
         violations_stream_df.writeStream.format("json")
         .outputMode("append")
         .option("path", "output/stream")
-        .option("checkpointLocation", "output/checkpoints/violations")
+        .option("checkpointLocation", checkpoint_location_violations)
         .option("failOnDataLoss", "false")
         .start()
     )
@@ -115,7 +118,7 @@ def run_spark_job():
         travels_stream_df.writeStream.format("json")
         .outputMode("append")
         .option("path", "output/stream2")
-        .option("checkpointLocation", "output/checkpoints/travels")
+        .option("checkpointLocation", checkpoint_location_travels)
         .option("failOnDataLoss", "false")
         .start()
     )
@@ -136,7 +139,7 @@ def run_spark_job():
         delays_stream_df.writeStream.format("json")
         .outputMode("append")
         .option("path", "output/stream3")
-        .option("checkpointLocation", "output/checkpoints/delays")
+        .option("checkpointLocation", checkpoint_location_delays)
         .option("failOnDataLoss", "false")
         .start()
     )
