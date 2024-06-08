@@ -1,3 +1,4 @@
+from sqlite3 import Timestamp
 from kafka import KafkaProducer
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType
@@ -9,9 +10,6 @@ from Config.Logger import *
 
 
 checkpoint_location = "output/checkpoints"
-checkpoint_location_violations = "output/checkpoints/violations"
-checkpoint_location_travels = "output/checkpoints/travels"
-checkpoint_location_delays = "output/checkpoints/delays"
 
 
 def run_spark_job():
@@ -43,23 +41,6 @@ def run_spark_job():
     violations_df = read_from_mysql(VIOLATIONS)
     travels_df = read_from_mysql(TRAVELS)
     delays_df = read_from_mysql(DELAYS)
-
-    #travels_df.show()
-    #violations_df.show()
-    #delays_df.show()
-
-    """     #!! for test purposes only
-        def send_to_kafka_topic(df, topic):
-            kafka_producer = KafkaProducer(bootstrap_servers=KAFKA_BROKER)
-            rows = df.collect()
-            for row in rows:
-                kafka_producer.send(topic, str(row).encode("utf-8"))
-            kafka_producer.flush()
-            kafka_producer.close()
-
-        send_to_kafka_topic(violations_df, VIOLATIONS_TOPIC)
-        send_to_kafka_topic(travels_df, KAFKA_TOPIC)
-        send_to_kafka_topic(delays_df, DELAYS_TOPIC)  """
 
     schema = StructType(
         [
@@ -97,7 +78,7 @@ def run_spark_job():
         violations_stream_df.writeStream.format("json")
         .outputMode("append")
         .option("path", "output/stream")
-        .option("checkpointLocation", checkpoint_location_violations)
+        .option("checkpointLocation", "output/checkpoints/violations")
         .option("failOnDataLoss", "false")
         .start()
     )
@@ -118,7 +99,7 @@ def run_spark_job():
         travels_stream_df.writeStream.format("json")
         .outputMode("append")
         .option("path", "output/stream2")
-        .option("checkpointLocation", checkpoint_location_travels)
+        .option("checkpointLocation", "output/checkpoints/travels")
         .option("failOnDataLoss", "false")
         .start()
     )
@@ -131,7 +112,7 @@ def run_spark_job():
         .option("failOnDataLoss", "false")
         .load()
         .selectExpr("CAST(value AS STRING) ", "CAST(timestamp AS STRING)")
-        .select(from_json("value", delays_schema).alias("data"), "timestamp")
+        .select(from_json("value", schema).alias("data"), "timestamp")
         .select("data.*", "timestamp")
     )
 
@@ -139,7 +120,7 @@ def run_spark_job():
         delays_stream_df.writeStream.format("json")
         .outputMode("append")
         .option("path", "output/stream3")
-        .option("checkpointLocation", checkpoint_location_delays)
+        .option("checkpointLocation", "output/checkpoints/delays")
         .option("failOnDataLoss", "false")
         .start()
     )
@@ -149,6 +130,7 @@ def run_spark_job():
     query3.awaitTermination()
 
     spark.stop()
+
 
 """ if __name__ == "__main__":
     run_spark_job() """

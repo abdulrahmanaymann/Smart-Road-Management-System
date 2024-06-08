@@ -204,7 +204,7 @@ def car_types_delays():
                         json.loads(line) for line in data_file.readlines()
                     ]
                     for item in streaming_data:
-                        car_id = item.get("Car_ID")
+                        car_id = item.get("ID")
                         if car_id:
                             car_type = car_id.split("_")[1]
                             car_types[car_type] = car_types.get(car_type, 0) + 1
@@ -212,6 +212,7 @@ def car_types_delays():
                 print(f"Error reading file {file_path}: {str(e)}")
 
     return jsonify({"car_types": car_types})
+
 
 
 @app.route("/Dashboard")
@@ -285,8 +286,8 @@ def APP():
             
 
         except Exception as e:
-            print(f"Error occurred: {e}")
-            return f"Erroooooooooooor!\n{e}"
+            sg.popup(f"Error occurred: {e}",icon=DIALOG_ERROR_ICON,title='ERROR')
+            return render_template("index.html")
 
         else:
             return render_template("index.html")
@@ -356,7 +357,7 @@ def logout():
 
 
 @app.route("/paid")
-def paid(): 
+def paid():
     return render_template("payment.html")
 
 @app.route("/update", methods=["POST"])
@@ -430,7 +431,7 @@ def paid_violations():
 
 
 if __name__ == "__main__":
-    """ spark_thread = threading.Thread(target=run_spark_job)
-    spark_thread.start() """
+    """     spark_thread = threading.Thread(target=run_spark_job)
+        spark_thread.start()  """
 
     app.run(debug=True)
