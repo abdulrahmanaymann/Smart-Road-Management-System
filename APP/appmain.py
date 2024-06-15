@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import hashlib
+from http.client import HTTPException
 import secrets
 import sys
 import threading
@@ -214,7 +215,6 @@ def car_types_delays():
     return jsonify({"car_types": car_types})
 
 
-
 @app.route("/Dashboard")
 def streaming_page():
     return render_template("streaming.html")
@@ -294,7 +294,7 @@ def APP():
     return render_template("index.html")
 
 
-@app.route("/<name>")
+@app.route("/driver/<name>")
 def driver_info(name):
     conn, cursor = DB_Connection(
         MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
@@ -428,10 +428,8 @@ def paid_violations():
         return "Database connection failed."
 
 
-
-
 if __name__ == "__main__":
-    """     spark_thread = threading.Thread(target=run_spark_job)
-        spark_thread.start()  """
+    spark_thread = threading.Thread(target=run_spark_job)
+    spark_thread.start()
 
     app.run(debug=True)
