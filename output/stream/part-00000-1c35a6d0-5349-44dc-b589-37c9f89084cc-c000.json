@@ -1,0 +1,11 @@
+{"ID":"3_Car","Start Gate":"Cairo","End Gate":"Giza","Start Date":"2024-06-08 16:30:44","End Date":"2024-06-08 16:30:59","timestamp":"2024-06-08 16:30:59.069"}
+{"ID":"3_Car","Start Gate":"Giza","End Gate":"Qalyubia","Start Date":"2024-06-08 16:30:50","End Date":"2024-06-08 16:34:20","timestamp":"2024-06-08 16:34:20.761"}
+{"ID":"4_Taxi","Start Gate":"Qalyubia","End Gate":"Monufia","Start Date":"2024-06-08 16:20:15","End Date":"2024-06-08 16:46:50","timestamp":"2024-06-08 16:46:50.161"}
+{"ID":"3_Car","Start Gate":"Cairo","End Gate":"Giza","Start Date":"2024-06-08 16:32:01","End Date":"2024-06-08 17:00:44","timestamp":"2024-06-08 17:00:44.909"}
+{"ID":"3_Car","Start Gate":"Giza","End Gate":"Qalyubia","Start Date":"2024-06-08 16:32:08","End Date":"2024-06-08 17:00:50","timestamp":"2024-06-08 17:00:50.368"}
+{"ID":"1423_Bus","Start Gate":"Cairo","End Gate":"Giza","Start Date":"2024-06-08 16:55:36","End Date":"2024-06-08 17:01:07","timestamp":"2024-06-08 17:01:07.431"}
+{"ID":"1423_Bus","Start Gate":"Giza","End Gate":"Qalyubia","Start Date":"2024-06-08 16:56:31","End Date":"2024-06-08 17:01:54","timestamp":"2024-06-08 17:01:54.542"}
+{"ID":"1231_Motorcycle","Start Gate":"Cairo","End Gate":"Giza","Start Date":"2024-06-08 17:17:03","End Date":"2024-06-08 17:17:39","timestamp":"2024-06-08 17:17:43.897"}
+{"ID":"3_Car","Start Gate":"Cairo","End Gate":"Giza","Start Date":"2024-06-08 17:34:57","End Date":"2024-06-08 17:35:34","timestamp":"2024-06-08 17:35:35.862"}
+{"ID":"3_Car","Start Gate":"Giza","End Gate":"Qalyubia","Start Date":"2024-06-08 17:35:21","End Date":"2024-06-08 17:44:03","timestamp":"2024-06-08 17:44:17.642"}
+{"ID":"3_Car","Start Gate":"Cairo","End Gate":"Giza","Start Date":"2024-06-08 17:43:49","End Date":"2024-06-08 17:47:11","timestamp":"2024-06-08 17:47:13.469"}
