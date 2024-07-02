@@ -1,0 +1,111 @@
+{% extends "base.html" %} {% block head %}
+<title>Smart Radar</title>
+{% endblock %} {% block content %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <body>
+    <input type="checkbox" id="check" />
+    <label for="check">
+      <i class="fas fa-bars" id="btn"></i>
+      <i class="fas fa-times" id="cancel"></i>
+    </label>
+    <div class="sidebar">
+      <header style="size: 50px">Radar</header>
+      <ul>
+        <li>
+          <a href="/stream"><i class="fas fa-qrcode"></i>Dashboard</a>
+        </li>
+        <li>
+          <a href="#"><i class="far fa-question-circle"></i>About</a>
+        </li>
+        <li>
+          <a href="#"><i class="far fa-envelope"></i>Contact</a>
+        </li>
+      </ul>
+    </div>
+    <section></section>
+  </body>
+</html>
+
+<div class="center">
+  <form id="myForm" method="post" enctype="multipart/form-data">
+    <h1>
+      Smart
+      <span
+        class="R"
+        style="
+          color: #fee715ff;
+          font-family: Sansita Swashed, cursive;
+          font-size: 50px;
+        "
+        >R</span
+      >adar
+    </h1>
+    <!-- Car ID input -->
+    <span id="carIdLabel">Car ID:</span>
+    <div class="inputbox" id="carIdInput">
+      <input type="text" name="ID" placeholder="Car ID .e.g:0000_Car" />
+    </div>
+    <!-- Start Gate input -->
+    <span>Start Gate:</span>
+    <div class="inputbox">
+      <input
+        type="text"
+        name="StartGate"
+        required="required"
+        placeholder="Start Gate"
+      />
+    </div>
+    <!-- Upload Image input -->
+    <span>Upload Image:</span>
+    <div class="inputbox">
+      <input type="file" id="image" name="image" accept="image/*" />
+      <button type="button" id="clearImage" class="clear-button">
+        <i class="fas fa-times-circle"></i>
+      </button>
+    </div>
+    <div class="inputbox">
+      <button type="submit">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        SUBMIT
+      </button>
+    </div>
+  </form>
+</div>
+
+  </form>
+</div>
+<script>
+  document
+    .getElementById("myForm")
+    .addEventListener("submit", function (event) {
+      var imageInput = document.getElementById("image");
+      var carIdInput = document.getElementsByName("ID")[0];
+      var startGateInput = document.getElementsByName("StartGate")[0];
+
+      if (
+        !imageInput.files.length &&
+        (!carIdInput.value.trim() || !startGateInput.value.trim())
+      ) {
+        alert("Please fill in both Car ID and Start Gate or upload an image.");
+        event.preventDefault();
+      } else if (!imageInput.files.length) {
+        carIdInput.required = true;
+        document.getElementById("carIdLabel").innerText = "Car ID:";
+      } else {
+        carIdInput.required = false;
+        document.getElementById("carIdLabel").innerText = "Car ID (Optional):";
+      }
+    });
+
+  document.getElementById("clearImage").addEventListener("click", function () {
+    var imageInput = document.getElementById("image");
+
+    imageInput.value = "";
+  });
+</script>
+
+{% endblock %}
