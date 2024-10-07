@@ -2,8 +2,11 @@ from datetime import datetime, timedelta
 import hashlib
 from http.client import HTTPException
 import secrets
+
 import sys
 import threading
+
+from flask_socketio import SocketIO
 
 sys.path.append("D:\\GP\\graduation project\\GP")
 
@@ -44,6 +47,7 @@ df_dict = df_all_government.to_dict(orient="index")
 
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 
 def is_json_file(file_name):
@@ -103,7 +107,6 @@ def json_data():
             "joined_records": joined_data,
         }
     )
-
 
 
 @app.route("/streaming")
@@ -283,10 +286,14 @@ def APP():
 
             producer.send(topic_name, mes.encode("utf-8"))
             producer.flush()
-            
+
+            socketio.emit(
+                "violation_alert",
+                {"message": f"New violation for car ID {car_id}", "car_id": car_id},
+            )
 
         except Exception as e:
-            sg.popup(f"Error occurred: {e}",icon=DIALOG_ERROR_ICON,title='ERROR')
+            sg.popup(f"Error occurred: {e}", icon=DIALOG_ERROR_ICON, title="ERROR")
             return render_template("index.html")
 
         else:
@@ -298,7 +305,7 @@ def APP():
 def driver_info(name):
     conn, cursor = DB_Connection(
         MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
-        )
+    )
     travel_info, violations = get_driver_info(name, conn, cursor)
     email, car_ids = get_driver_profile(name, conn, cursor)
 
@@ -311,7 +318,6 @@ def driver_info(name):
         )
     else:
         return "Driver information not found."
-
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -360,6 +366,7 @@ def logout():
 def paid():
     return render_template("payment.html")
 
+
 @app.route("/update", methods=["POST"])
 def button():
     if request.method == "POST":
@@ -404,7 +411,7 @@ def register_admin():
     return render_template("register_admin.html")
 
 
-@app.route('/paid_violations')
+@app.route("/paid_violations")
 def paid_violations():
     conn, cursor = DB_Connection(
         MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
@@ -413,9 +420,11 @@ def paid_violations():
     if conn and cursor:
         try:
             paid_violations = get_paid_violations(conn, cursor)
-            
+
             if paid_violations:
-               return render_template('paid_violations.html', paid_violations=paid_violations)
+                return render_template(
+                    "paid_violations.html", paid_violations=paid_violations
+                )
             else:
                 return "No paid violations found."
         except Exception as e:
@@ -429,7 +438,7 @@ def paid_violations():
 
 
 if __name__ == "__main__":
-    spark_thread = threading.Thread(target=run_spark_job)
-    spark_thread.start()
+    #spark_thread = threading.Thread(target=run_spark_job)
+    #spark_thread.start()
 
-    app.run(debug=True)
+    socketio.run(app, debug=True)
